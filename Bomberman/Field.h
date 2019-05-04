@@ -259,20 +259,6 @@ public:
 
 	bool IsCellContainsOnlyWall(Point point) const {
 		return _field[point._row_num][point._col_num] == Wall;
-
-		if (!IsIn(Wall, point)) {
-			return false;
-		}
-
-		if (IsIn(MagicDoor, point)) {
-			return false;
-		}
-
-		if (IsIn(IncreaseBombBlastRadius, point)) {
-			return false;
-		}
-
-		return true;
 	}
 
 	void Add(FieldObject object, Point point) {
