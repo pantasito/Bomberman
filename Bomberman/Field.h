@@ -227,10 +227,14 @@ public:
 		}
 	}
 
-	void Erase() {
+	void Clear() {
+		_str_field.assign(' ', _str_field.size());
+		/*
 		for (auto& ch : _str_field) {
 			ch = ' ';
 		}
+		*/
+
 		for (int i = 0; i < RowsCount(); i++)
 		{
 			SetSymbol(Point(i, ColsCount()), '\n');

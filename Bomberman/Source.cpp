@@ -41,9 +41,10 @@ enum class Direction : int
 	Down
 };
 
-static const Point kMoveDeltas[] = { Point(0,-1), Point(-1,0), Point(0,1), Point(1,0) };
 
-bool FieldCellAvailabilityTest(Field field, Point start) {
+static const std::vector<Point> kMoveDeltas = { Point(0,-1), Point(-1,0), Point(0,1), Point(1,0) };
+
+bool FieldCellAvailabilityTest(Field& field, Point start) {
 	std::queue<Point> points;
 	points.push(start);
 	//в цикле до те пор пока очередь не пуста делаю следующее:
@@ -54,7 +55,7 @@ bool FieldCellAvailabilityTest(Field field, Point start) {
 		points.pop();
 		field.Add(Tested, start);
 
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i < kMoveDeltas.size(); ++i) {
 			const Point new_point = p + kMoveDeltas[i];
 
 			if (!field.IsOnField(new_point)) {
@@ -73,6 +74,8 @@ bool FieldCellAvailabilityTest(Field field, Point start) {
 			points.push(new_point);
 		}
 	}
+
+	// ANTODO  обойтись без этого цикла
 
 	//бегу по полю, если встречаю точку, которая лежит в поле 
 	//и не содержит число маркер и не является неразрушаемой стеной - товозвращаю false;
@@ -117,24 +120,30 @@ bool FieldCellAvailabilityTest(Field field, Point start) {
 class Game {
 	Field _field;
 
-	int _lives = 3;
+	// ANTODO - разбить на структурки
+	// ANTODO - все булы начинай с 
 	bool _game_over = false;
 	bool _you_won = false;
+	
+	// ANTODO добавить константу стартового кол-ва жизней. И добавить тут cur
+	int _lives = 3;
+	
 	bool _ability_to_pass_through_walls = false;
 	bool _immunity_to_explosions = false;
 	bool _detonate_bomb_at_touch_of_button = false;
 
 	int _bomb_blast_radius = 1;
 	int _max_bomb_num = 1;
-	int _cur_bomb_count = 0;
+	int _cur_bomb_count = 0; // ANTODO выплить
 
-	Point _start = Point(1, 1);
+	const Point _start = Point(1, 1); // ANTODO сделать static и вынести к общим параметрам
 	Point _bo_man_coords = _start;
 
+	// ANTODO сделать класс Enemy
 	std::vector<Point> _enemies_coords;
 	std::vector<Point> _direction_of_movement_of_enemy;
-
-	std::vector<Point> _only_walls;
+	
+	std::vector<Point> _only_walls; // ANTODO убрать по возможности
 	std::vector<PlantedBomb> _planted_bombs;
 
 	void GenerateFrame() {
@@ -153,7 +162,7 @@ class Game {
 		_field.Set(Frame6, Point(_field.RowsCount() - 1, _field.ColsCount() - 1));
 	}
 
-	void GenerateIndestructibleWalls(int IndestructibleWallsCount) {
+	void GenerateIndestructibleWalls(int IndestructibleWallsCount) { // ANTODO code style
 		int indestructible_walls_generated = 0;
 
 		while (indestructible_walls_generated < IndestructibleWallsCount) {
@@ -164,7 +173,7 @@ class Game {
 				++indestructible_walls_generated;
 			}
 		}
-		_field.Set(Empty, Point(1, 1));
+		_field.Set(Empty, Point(1, 1)); // ANTODO
 	}
 
 	void GenerateWalls(int WallsCount) {
@@ -183,11 +192,6 @@ class Game {
 		if (!_only_walls.empty()) {
 			_field.Add(MagicDoor, _only_walls.back());
 			_only_walls.pop_back();
-			return;
-		}
-
-		if (_field.RowsCount() == 1 && _field.ColsCount() == 1) {//одноклеточная карта, там где бомбермен - там же переход на новый уровень
-			_field.Set(MagicDoor, Point(0, 0));
 			return;
 		}
 
@@ -216,7 +220,7 @@ class Game {
 		}
 	}
 
-	void GenerateDirectionOfEnemyMovement() {
+	void GenerateDirectionOfEnemyMovement() { // ANTODO
 		for (int i = 0; i < _enemies_coords.size(); ++i) {
 			for (int j = 0; j < 4; ++j) {
 				const Point possible_direction = _enemies_coords[i] + kMoveDeltas[j];
@@ -235,20 +239,18 @@ class Game {
 	}
 
 	void GenerateBonuses() {
-		int num_of_walls_with_bonuses_of_one_type = (int)(_only_walls.size() / 30);    // С вероятнотью 1/15 за стеной бонус, всего 6 типов бонусов. 																  
+		const int num_of_walls_with_bonuses_of_one_type = (int)(_only_walls.size() / 30); // ANTODO 30 ва параметр																  
 									  // Бонус сохраняется при переходе на новый уровень.
 
 		for (int i = 0; i < num_of_walls_with_bonuses_of_one_type; ++i) {
 			_field.Add(IncreasingNumberOfBombsDeliveredAtTime, _only_walls.back());
 			_only_walls.pop_back();
-		}
-
-		for (int i = 0; i < num_of_walls_with_bonuses_of_one_type; ++i) {
 			_field.Add(IncreaseBombBlastRadius, _only_walls.back());
 			_only_walls.pop_back();
 		}
-
-		if (_only_walls.size() > 3) {										//по одному крутому бонусу
+		
+		//по одному крутому бонусу
+		if (_only_walls.size() > 3) {										
 			_field.Add(AbilityToPassThroughWalls, _only_walls.back());
 			_only_walls.pop_back();
 			_field.Add(ImmunityToExplosion, _only_walls.back());
@@ -265,6 +267,8 @@ class Game {
 			if (!_field.IsOnField(point)) {
 				continue;
 			}
+
+			// ANTODO вынести в функцию 
 			if (!(_field.IsIn(Wall, point) || _field.IsIn(IndestructibleWall, point) || _field.IsIn(Enemy, point) || _field.IsIn(Bomb, point))) {
 				return false;
 			}
@@ -388,7 +392,7 @@ public:
 			if (FieldCellAvailabilityTest(_field, _start)) {
 				break;
 			}
-			_field.Erase();
+			_field.Clear();
 		}
 
 		GenerateFrame();
