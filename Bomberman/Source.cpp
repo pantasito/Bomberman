@@ -31,14 +31,14 @@
 	размечаю всю карту, потом провер€ю. Ёто лучше!
 */
 
-static const int time_from_planting_bomb_until_its_explosion = 3;
+static const int time_from_planting_bomb_until_its_explosion = 3; // code style 
 
 enum class Direction : int
 {
-	Left,
-	Up,
-	Right,
-	Down
+	Left = 0,
+	Up = 1,
+	Right = 2,
+	Down = 3
 };
 
 
@@ -141,7 +141,7 @@ class Game {
 
 	// ANTODO сделать класс Enemy
 	std::vector<Point> _enemies_coords;
-	std::vector<Point> _direction_of_movement_of_enemy;
+	std::vector<Point> _direction_of_movement_of_enemy; // ANTODO _direction_delta
 	
 	std::vector<Point> _only_walls; // ANTODO убрать по возможности
 	std::vector<PlantedBomb> _planted_bombs;
@@ -242,6 +242,7 @@ class Game {
 		const int num_of_walls_with_bonuses_of_one_type = (int)(_only_walls.size() / 30); // ANTODO 30 ва параметр																  
 									  // Ѕонус сохран€етс€ при переходе на новый уровень.
 
+		// ANTODO переделать систему бонусов, чтоб не было мноо ифов (ѕќ“ќћ)
 		for (int i = 0; i < num_of_walls_with_bonuses_of_one_type; ++i) {
 			_field.Add(IncreasingNumberOfBombsDeliveredAtTime, _only_walls.back());
 			_only_walls.pop_back();
@@ -277,9 +278,23 @@ class Game {
 	}
 
 	Point RefreshNewPosAndDirection(Point point, int num_in_enemy_coords_vector) {
-		bool got_right_dir = false;
-		while (!got_right_dir) {
+		
+		static const Direction kPosibleDirection[4][3] =
+		{
+			{Direction::Up, Direction::Right, Direction::Down},
+			{Direction::Left, Direction::Right, Direction::Down},
+			{Direction::Up, Direction::Left, Direction::Down},
+			{Direction::Up, Direction::Right, Direction::Left},
+		};
+
+	//	const auto prev_dir = _direction_of_movement_of_enemy[num_in_enemy_coords_vector];
+
+		// ANTODO сгенерить перестановку {1, 2, 3}, пробежать по ней фором 
+
+		while (true) {
+			//int dir = (int)kPosibleDirection[prev_dir][rand() % 3];
 			int dir = rand() % 4;
+
 			const Point new_pos = point + kMoveDeltas[dir];
 			if (!_field.IsOnField(new_pos)) {
 				continue;
@@ -290,7 +305,6 @@ class Game {
 			if (_field.IsIn(Wall, new_pos) || _field.IsIn(IndestructibleWall, new_pos) || _field.IsIn(Bomb, new_pos) || _field.IsIn(Enemy, new_pos)) {
 				continue;
 			}
-			got_right_dir = true;
 			_direction_of_movement_of_enemy[num_in_enemy_coords_vector] = kMoveDeltas[dir];
 			return point + kMoveDeltas[dir];
 		}
@@ -300,10 +314,19 @@ class Game {
 		// ’очу чтоб враг двигалс€ по пр€мой до упора,
 		// с шансом 20% мен€л направление
 		// двигалс€ до упора
+
 		for (int i = 0; i < _enemies_coords.size(); ++i) {
+			//_enemy.PossibleChangeDirection(); 
+			// ANTODO -
+			// 0) ¬ызовем функцию, котора€ помен€ет или не помен€ет направление 
+			// 1) пусть сначала провер€етс€ что враг может подвунитьс€ и если может двигай
+			// 2) GetNewDirection - вернет новый дирешн, если вернет тот же самый который был, то это зачит то что двигатьс€ некуда
+			// 2.1) ≈сли вернулась то же направление то continue
+			// 2.2) ≈сли вренулось другое, то пересетоваем дельту и хоим безусловно
 			if (IsIsolated(_enemies_coords[i])) {
 				continue;
 			}
+
 			Point new_pos = _enemies_coords[i] + _direction_of_movement_of_enemy[i];
 			if (!_field.IsOnField(new_pos)) {
 				new_pos = RefreshNewPosAndDirection(_enemies_coords[i], i);
@@ -317,12 +340,11 @@ class Game {
 				MinusOneLife();
 			}
 
-			// ѕредставь что враг всего 1. ƒаже так, € покажу 2 строчки, а ты сам подумай что может быть
-
-			_field.Remove(Enemy, _enemies_coords[i]); // представб что первый поток выполнил эту операцию, но не приступил к следующей
+			_field.Remove(Enemy, _enemies_coords[i]);
 			_field.Add(Enemy, new_pos);
 			_enemies_coords[i] = new_pos;
 		}
+
 		/*
 		//добиваюсь того, чтоб враг не сто€л на месте
 
@@ -358,7 +380,7 @@ class Game {
 		*/
 	}
 
-	void MinusOneLife() {
+	void MinusOneLife() { // ANTODO добавить в назание чтото про move to start
 		_field.Remove(BoMan, _bo_man_coords);
 		--_lives;
 
@@ -375,8 +397,10 @@ class Game {
 		if (_planted_bombs.empty()) {
 			return;
 		}
+		const auto cur_time = time(0);
+		// ANTODO std::partition
 		for (auto& bomb : _planted_bombs) {
-			if (time(0) - bomb._time >= time_from_planting_bomb_until_its_explosion) {
+			if (cur_time - bomb._time >= time_from_planting_bomb_until_its_explosion) {
 				BombBlowUp(bomb);
 			}
 		}
@@ -414,8 +438,8 @@ public:
 		}
 	}
 
-	void GetInfoFromThisPoint(Point point) {
-		if (_field.IsIn(Empty, point)) {
+	void GetInfoFromThisPoint(Point point) { // ANTODO плохое название
+		if (_field.IsIn(Empty, point)) { // ANTODO всегда возвращает false
 			return;
 		}
 
@@ -474,6 +498,7 @@ public:
 			return;
 		}
 
+		// ANTODO сначала легче проверить флаг
 		if ((_field.IsIn(Wall, new_pos) || _field.IsIn(Bomb, new_pos)) && _ability_to_pass_through_walls == false) {
 			return;
 		}
@@ -531,35 +556,23 @@ public:
 					break;
 				}
 
-				if (_field.IsIn(Wall, exploded_cell)) {
-					if (_field.IsCellContainsOnlyWall(exploded_cell)) {
-						for (int i = 0; i < _only_walls.size(); ++i) {
-							if (_only_walls[i] == exploded_cell) {
-								_only_walls[i] = _only_walls.back();
-								_only_walls.pop_back();
-								break;
-							}
-						}
-					}
-
-					_field.Remove(Wall, exploded_cell);
-					if (_field.IsIn(BoMan, exploded_cell) && _immunity_to_explosions == false) {
-						_bo_man_exploded = true;
-					}
-					break;
-				}
-
 				if (_field.IsIn(BoMan, exploded_cell) && _immunity_to_explosions == false) {
 					_bo_man_exploded = true;
+				}
+
+				if (_field.IsIn(Wall, exploded_cell)) {
+					_field.Remove(Wall, exploded_cell);
+					break;
 				}
 
 				if (_field.IsIn(Enemy, exploded_cell)) {
 					_field.Remove(Enemy, exploded_cell);
 
-					for (int i = 0; i < _enemies_coords.size(); ++i) {
+					for (int i = 0; i < _enemies_coords.size(); ++i) { // ANTODO задуматьс€ о более быстром поиске
 						if (_enemies_coords[i] == exploded_cell) {
 							_direction_of_movement_of_enemy[i] = _direction_of_movement_of_enemy.back();
 							_enemies_coords[i] = _enemies_coords.back();
+							
 							_enemies_coords.pop_back();
 							_direction_of_movement_of_enemy.pop_back();
 							break;
@@ -627,7 +640,9 @@ public:
 		auto enemy_move_time = time(0);
 
 		while (!_game_over) {
+			// ANTODO при нажатии на was d не двигать бомермена, а помнить только клавишу и двигать тут
 			GetInfoFromThisPoint(_bo_man_coords);
+			//CheckBomberManPosi();
 			if (time(0) - enemy_move_time > 1) {
 				MoveEnemies();
 				enemy_move_time = time(0);
@@ -681,6 +696,9 @@ void g()
 #include <ios>
 
 int main() {
+
+
+
 	/*
 	std::cout << "Helloooooooooooooooooooooooooooooooooooo";
 	std::cout.seekp(5, std::ios_base::beg);

@@ -27,9 +27,10 @@ struct Point {
 	}
 };
 
+//ANTODO запрети копирование
 struct PlantedBomb {
 	Point _point;
-	time_t _time;
+	time_t _time; // ANTODO nameпусть будет авремен взпрыва, а не установки
 	PlantedBomb(Point point, time_t time) : _point(point), _time(time) {}
 
 	bool operator == (const PlantedBomb planted_bomb) const {
