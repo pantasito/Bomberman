@@ -159,6 +159,9 @@ public:
     Field(int rows_count, int cols_count)
         : _rows_count(rows_count)
         , _cols_count(cols_count) {
+
+        assert(rows_count >= 3 && cols_count >= 3);
+
         _field = new int* [_rows_count];
         for (int i = 0; i < _rows_count; ++i) {
             _field[i] = new int[_cols_count];
@@ -203,7 +206,6 @@ public:
 		}
 	}
 
-
 	void Remove(FieldObject object, Point point) {
 		_field[point._row_num][point._col_num] &= (~object);
 		UpdateStringPoint(point);
@@ -230,7 +232,6 @@ public:
 		_field[point._row_num][point._col_num] = object;
 		UpdateStringPoint(point);
 	}
-
 
 	bool IsOnField(Point point) const {
 		return (point._col_num >= 1 && point._col_num < ColsCount() - 1 && point._row_num >= 1 && point._row_num < RowsCount() - 1);
