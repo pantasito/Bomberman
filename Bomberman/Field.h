@@ -60,9 +60,8 @@ class Field
 	std::string _str_field;
 
 	void SetSymbol(Point point, char symbol)
-	{
-		_str_field[point._row_num * (_cols_count + 1) + point._col_num] = symbol;
-
+	{   //need to test
+		_str_field[(_cols_count + 4) + point._row_num * (_cols_count + 3) + point._col_num] = symbol;
 	}
 
 	void UpdateStringPoint(Point point)
@@ -186,7 +185,7 @@ public:
         _str_field = top_of_field_frame + str_field_with_side_parts_of_frame + lower_part_of_field_frame;
     }
 
-	void Clear() {
+	void Clear() {//переделать
 		_str_field.assign(' ', _str_field.size());
 		/*
 		for (auto& ch : _str_field) {
@@ -219,9 +218,11 @@ public:
 		return _field[point._row_num][point._col_num] == Empty;
 	}
 
+    /*
 	bool IsCellContainsOnlyWall(Point point) const {
 		return _field[point._row_num][point._col_num] == Wall;
 	}
+    */
 
 	void Add(FieldObject object, Point point) {
 		_field[point._row_num][point._col_num] |= object;
@@ -234,7 +235,7 @@ public:
 	}
 
 	bool IsOnField(Point point) const {
-		return (point._col_num >= 1 && point._col_num < ColsCount() - 1 && point._row_num >= 1 && point._row_num < RowsCount() - 1);
+		return (point._col_num >= 0 && point._col_num < ColsCount() && point._row_num >= 0 && point._row_num < RowsCount());
 	}
 
 	void Print()
