@@ -1,6 +1,9 @@
 #pragma once 
 
 #include <string> 
+
+#include <iostream> 
+
 #include <assert.h> 
 
 
@@ -21,21 +24,6 @@ struct Point {
 	Point operator+(Point point) const {
 		return Point(point._row_num + _row_num, point._col_num + _col_num);
 	}
-
-	Point operator-(Point point) const {
-		return Point(_row_num - point._row_num, _col_num - point._col_num);
-	}
-};
-
-//ANTODO запрети копирование
-struct PlantedBomb {
-	Point _point;
-	time_t _time; // ANTODO nameпусть будет авремен взпрыва, а не установки
-	PlantedBomb(Point point, time_t time) : _point(point), _time(time) {}
-
-	bool operator == (const PlantedBomb planted_bomb) const {
-		return (planted_bomb._point == _point && planted_bomb._time == _time);
-	}
 };
 
 enum FieldObject : int {
@@ -52,20 +40,16 @@ enum FieldObject : int {
 	ImmunityToExplosion = 512,						//g
 	RunningSpeed = 1024,							//s
 	DetonateBombAtTouchOfButton = 2048,				//q
-	Frame1 = 4096,
-	Frame2 = 8192,
-	Frame3 = 16384,
-	Frame4 = 32768,
-	Frame5 = 65536,
-	Frame6 = 131072,
-	Tested = 262144,
+	Tested = 4096,
 };
 
+/*
 static const std::vector<std::pair<FieldObject, char>> v =
 {
 	std::pair<FieldObject, char>{Tested, (char)251},
 	std::pair<FieldObject, char>{Frame1 , 205}
 };
+*/
 
 class Field
 {
@@ -166,67 +150,38 @@ class Field
 			return;
 		}
 
-		if (IsIn(Frame1, point))
-		{
-			SetSymbol(point, 205);
-			return;
-		}
-
-		if (IsIn(Frame2, point))
-		{
-			SetSymbol(point, 186);
-			return;
-		}
-
-		if (IsIn(Frame3, point))
-		{
-			SetSymbol(point, 201);
-			return;
-		}
-
-		if (IsIn(Frame4, point))
-		{
-			SetSymbol(point, 187);
-			return;
-		}
-
-		if (IsIn(Frame5, point))
-		{
-			SetSymbol(point, 200);
-			return;
-		}
-
-		if (IsIn(Frame6, point))
-		{
-			SetSymbol(point, 188);
-			return;
-		}
-
 		assert(IsEmpty(point));
 
 		SetSymbol(point, ' ');
 	}
 
 public:
-	Field(int rows_count, int cols_count)
-		: _rows_count(rows_count)
-		, _cols_count(cols_count)
-	{
-		_field = new int* [_rows_count];
-		for (int i = 0; i < _rows_count; ++i) {
-			_field[i] = new int[_cols_count];
+    Field(int rows_count, int cols_count)
+        : _rows_count(rows_count)
+        , _cols_count(cols_count) {
+        _field = new int* [_rows_count];
+        for (int i = 0; i < _rows_count; ++i) {
+            _field[i] = new int[_cols_count];
 
-			for (int j = 0; j < _cols_count; ++j) {
-				_field[i][j] = FieldObject::Empty;
-			}
-		}
+            for (int j = 0; j < _cols_count; ++j) {
+                _field[i][j] = FieldObject::Empty;
+            }
+        }
+        //поставить assert на маленькое поле 
+        std::string horizontal_part_of_field_frame(cols_count, (char)205);
 
-		_str_field.resize(rows_count * (cols_count + 1), ' ');
-		for (int i = 0; i < rows_count; i++)
-		{
-			SetSymbol(Point(i, cols_count), '\n');
-		}
-	}
+        std::string top_of_field_frame = (char)201 + horizontal_part_of_field_frame + (char)187 + '\n';
+        std::string lower_part_of_field_frame = (char)200 + horizontal_part_of_field_frame + (char)188 + '\n';
+
+        std::string str_field_with_side_parts_of_frame(rows_count * (cols_count + 3), ' ');
+        for (int i = 0; i < rows_count; ++i) {
+            str_field_with_side_parts_of_frame[i * (cols_count + 3)] = 186;
+            str_field_with_side_parts_of_frame[i * (cols_count + 3) + cols_count + 1] = 186;
+            str_field_with_side_parts_of_frame[i * (cols_count + 3) + cols_count + 2] = '\n';
+        }
+
+        _str_field = top_of_field_frame + str_field_with_side_parts_of_frame + lower_part_of_field_frame;
+    }
 
 	void Clear() {
 		_str_field.assign(' ', _str_field.size());
