@@ -30,14 +30,14 @@ enum class Direction : int {
 
 static const std::vector<Point> kMoveDeltas = { Point(0,-1), Point(-1,0), Point(0,1), Point(1,0) };
 
-bool FieldCellAvailabilityTest(Field& field, Point start) {
-    std::queue<Point> queue_where_i_mark_all_available_cells;
-    queue_where_i_mark_all_available_cells.push(start);
+bool AreAllCellsInThisFieldAvailable(Field& field, Point start) {
+    std::queue<Point> i_use_this_to_mark_all_available_cells;
+    i_use_this_to_mark_all_available_cells.push(start);
     int num_of_tested_cells = 1;
     
-    while (!queue_where_i_mark_all_available_cells.empty()) {
-		Point available_cell = queue_where_i_mark_all_available_cells.front();
-        queue_where_i_mark_all_available_cells.pop();
+    while (!i_use_this_to_mark_all_available_cells.empty()) {
+		Point available_cell = i_use_this_to_mark_all_available_cells.front();
+        i_use_this_to_mark_all_available_cells.pop();
 		field.Add(Tested, available_cell);
         
 		for (int i = 0; i < kMoveDeltas.size(); ++i) {                                                        
@@ -58,7 +58,7 @@ bool FieldCellAvailabilityTest(Field& field, Point start) {
             }
 
 			field.Add(Tested, cell);
-            queue_where_i_mark_all_available_cells.push(cell);
+            i_use_this_to_mark_all_available_cells.push(cell);
             ++num_of_tested_cells;
 		}
 	}
@@ -362,7 +362,7 @@ public:
 		while (true) {
             GenerateIndestructibleWalls(number_of_objects);
     
-			if (FieldCellAvailabilityTest(_field, _start)) {
+			if (AreAllCellsInThisFieldAvailable(_field, _start)) {
 				break;
 			}
 			_field.Clear();
@@ -583,8 +583,7 @@ public:
 		_field.Print();
 	}
 
-    
-        void Run() {
+    void Run() {
             auto enemy_move_time = time(0);
 
             while (!_game_over) {
@@ -649,7 +648,6 @@ public:
             std::system("pause");
         }
         */
-    
     
 	void Stop() {
 		_game_over = true;
