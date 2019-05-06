@@ -51,21 +51,18 @@ static const std::vector<std::pair<FieldObject, char>> v =
 };
 */
 
-class Field
-{
+class Field {
 	const int _rows_count;
 	const int _cols_count;
 
 	int** _field;
 	std::string _str_field;
 
-	void SetSymbol(Point point, char symbol)
-	{   //need to test
+	void SetSymbol(Point point, char symbol) {   
 		_str_field[(_cols_count + 4) + point._row_num * (_cols_count + 3) + point._col_num] = symbol;
 	}
 
-	void UpdateStringPoint(Point point)
-	{
+	void UpdateStringPoint(Point point) { //это в последнюю очередь, не знаю, как рефакторить
 		if (IsEmpty(point))
 		{
 			SetSymbol(point, ' ');
@@ -169,7 +166,7 @@ public:
                 _field[i][j] = FieldObject::Empty;
             }
         }
-        //поставить assert на маленькое поле 
+        
         std::string horizontal_part_of_field_frame(cols_count, (char)205);
 
         std::string top_of_field_frame = (char)201 + horizontal_part_of_field_frame + (char)187 + '\n';
@@ -185,25 +182,13 @@ public:
         _str_field = top_of_field_frame + str_field_with_side_parts_of_frame + lower_part_of_field_frame;
     }
 
-	void Clear() {//переделать
-		_str_field.assign(' ', _str_field.size());
-		/*
-		for (auto& ch : _str_field) {
-			ch = ' ';
-		}
-		*/
-
-		for (int i = 0; i < RowsCount(); i++)
-		{
-			SetSymbol(Point(i, ColsCount()), '\n');
-		}
-
-		for (int i = 1; i < RowsCount() - 1; ++i) {
-			for (int j = 1; j < ColsCount() - 1; ++j) {
-				_field[i][j] = FieldObject::Empty;
-			}
-		}
-	}
+    void Clear() {
+        for (int i = 0; i < _rows_count; ++i) {
+            for (int j = 0; j < _cols_count; ++j) {
+                Set(Empty, Point(i, j));
+            }
+        }             
+ 	}
 
 	void Remove(FieldObject object, Point point) {
 		_field[point._row_num][point._col_num] &= (~object);
