@@ -1,4 +1,4 @@
-#include <iostream> 
+п»ї#include <iostream> 
 
 #include <conio.h> 
 
@@ -17,115 +17,76 @@
 #include <memory> 
 
 #include "Field.h" 
-
-/*
-Для волнового алгоритма мне нужно:
-	1) для всех точек дойтиот старта до точки (финиш, все враги)
-	n операций m+1 раз (n - размер поля, m - количество врагов)
-
-	2) разметить все поле и проверить лежат ли финиш и враги в размеченных клетках?
-	(n операция и n памяти, потом для финиша и каждого врага проверяю есть ли что-то в клетке кроме них, если нет - облом, генерю новую карту и
-	повторяю операцию)
-
-	3) исключить ситуацию, когда у меня есть участки карты в которые невозможно попасть.
-	размечаю всю карту, потом проверяю. Это лучше!
-*/
+#include "Bomb.h"
 
 static const int time_from_planting_bomb_until_its_explosion = 3; // code style 
 
-enum class Direction : int
-{
+enum class Direction : int {
 	Left = 0,
 	Up = 1,
 	Right = 2,
 	Down = 3
 };
 
-
 static const std::vector<Point> kMoveDeltas = { Point(0,-1), Point(-1,0), Point(0,1), Point(1,0) };
 
 bool FieldCellAvailabilityTest(Field& field, Point start) {
-	std::queue<Point> points;
-	points.push(start);
-	//в цикле до те пор пока очередь не пуста делаю следующее:
-	//взял точку из очереди, добавил в очередь все соседние точки удоволетворяющие свойствам
-	//удалил обработанную точку
-	while (!points.empty()) {
-		Point p = points.front();
-		points.pop();
-		field.Add(Tested, start);
+    std::queue<Point> queue_where_i_mark_all_available_cells;
+    queue_where_i_mark_all_available_cells.push(start);
+    int num_of_tested_cells = 1;
+    
+    while (!queue_where_i_mark_all_available_cells.empty()) {
+		Point available_cell = queue_where_i_mark_all_available_cells.front();
+        queue_where_i_mark_all_available_cells.pop();
+		field.Add(Tested, available_cell);
+        
+		for (int i = 0; i < kMoveDeltas.size(); ++i) {                                                        
+			const Point cell = available_cell + kMoveDeltas[i];
 
-		for (int i = 0; i < kMoveDeltas.size(); ++i) {
-			const Point new_point = p + kMoveDeltas[i];
-
-			if (!field.IsOnField(new_point)) {
+			if (!field.IsOnField(cell)) {
 				continue;
 			}
 
-			if (field.IsIn(Tested, new_point)) {
+			if (field.IsIn(Tested, cell)) {
 				continue;
 			}
 
-			if (field.IsIn(IndestructibleWall, new_point)) {
-				continue;
-			}
+            if (field.IsIn(IndestructibleWall, cell)) {
+                ++num_of_tested_cells;
+                field.Add(Tested, cell);
+                continue;
+            }
 
-			field.Add(Tested, new_point);
-			points.push(new_point);
+			field.Add(Tested, cell);
+            queue_where_i_mark_all_available_cells.push(cell);
+            ++num_of_tested_cells;
 		}
 	}
 
-	// ANTODO  обойтись без этого цикла
-
-	//бегу по полю, если встречаю точку, которая лежит в поле 
-	//и не содержит число маркер и не является неразрушаемой стеной - товозвращаю false;
-	for (int i = 0; i < field.RowsCount(); ++i) {
-		for (int j = 0; j < field.ColsCount(); ++j) {
-			if (!field.IsOnField(Point(i, j))) {
-				continue;
-			}
-			if (field.IsIn(IndestructibleWall, Point(i, j))) {
-				continue;
-			}
-			if (field.IsIn(Tested, Point(i, j))) {
-				continue;
-			}
-
-			return false;
-		}
-	}
-	//field.Print();
-	//system("pause");
-	//system("cls");
+    if (num_of_tested_cells != field.ColsCount() * field.RowsCount()) {
+        return false;
+    }
 
 	for (int i = 0; i < field.RowsCount(); ++i) {
 		for (int j = 0; j < field.ColsCount(); ++j) {
-			if (!field.IsOnField(Point(i, j))) {
-				continue;
-			}
-			if (field.IsIn(IndestructibleWall, Point(i, j))) {
-				continue;
-			}
-			if (field.IsIn(Tested, Point(i, j))) {
-				field.Set(Empty, Point(i, j));
+            if (field.IsIn(Tested, Point(i, j))) {
+				field.Remove(Tested, Point(i, j));
 			}
 		}
 	}
-	//field.Print();
-	//system("pause");
-	//system("cls");
-	return true;
+	
+    return true;
 }
 
 class Game {
 	Field _field;
 
-	// ANTODO - разбить на структурки
-	// ANTODO - все булы начинай с 
+	// ANTODO - СЂР°Р·Р±РёС‚СЊ РЅР° СЃС‚СЂСѓРєС‚СѓСЂРєРё
+	// ANTODO - РІСЃРµ Р±СѓР»С‹ РЅР°С‡РёРЅР°Р№ СЃ 
 	bool _game_over = false;
 	bool _you_won = false;
 	
-	// ANTODO добавить константу стартового кол-ва жизней. И добавить тут cur
+	// ANTODO РґРѕР±Р°РІРёС‚СЊ РєРѕРЅСЃС‚Р°РЅС‚Сѓ СЃС‚Р°СЂС‚РѕРІРѕРіРѕ РєРѕР»-РІР° Р¶РёР·РЅРµР№. Р РґРѕР±Р°РІРёС‚СЊ С‚СѓС‚ cur
 	int _lives = 3;
 	
 	bool _ability_to_pass_through_walls = false;
@@ -134,33 +95,19 @@ class Game {
 
 	int _bomb_blast_radius = 1;
 	int _max_bomb_num = 1;
-	int _cur_bomb_count = 0; // ANTODO выплить
+	int _cur_bomb_count = 0; // ANTODO РІС‹РїР»РёС‚СЊ
 
-	const Point _start = Point(1, 1); // ANTODO сделать static и вынести к общим параметрам
+	const Point _start = Point(1, 1); // ANTODO СЃРґРµР»Р°С‚СЊ static Рё РІС‹РЅРµСЃС‚Рё Рє РѕР±С‰РёРј РїР°СЂР°РјРµС‚СЂР°Рј
 	Point _bo_man_coords = _start;
 
-	// ANTODO сделать класс Enemy
+	// ANTODO СЃРґРµР»Р°С‚СЊ РєР»Р°СЃСЃ Enemy
 	std::vector<Point> _enemies_coords;
 	std::vector<Point> _direction_of_movement_of_enemy; // ANTODO _direction_delta
 	
-	std::vector<Point> _only_walls; // ANTODO убрать по возможности
-	std::vector<PlantedBomb> _planted_bombs;
-
-	void GenerateFrame() {
-		for (int i = 1; i < _field.ColsCount() - 1; ++i) {
-			_field.Set(Frame1, Point(0, i));
-			_field.Set(Frame1, Point(_field.RowsCount() - 1, i));
-		}
-
-		for (int i = 1; i < _field.RowsCount() - 1; ++i) {
-			_field.Set(Frame2, Point(i, 0));
-			_field.Set(Frame2, Point(i, _field.ColsCount() - 1));
-		}
-		_field.Set(Frame3, Point(0, 0));
-		_field.Set(Frame4, Point(0, _field.ColsCount() - 1));
-		_field.Set(Frame5, Point(_field.RowsCount() - 1, 0));
-		_field.Set(Frame6, Point(_field.RowsCount() - 1, _field.ColsCount() - 1));
-	}
+	std::vector<Point> _only_walls; // ANTODO СѓР±СЂР°С‚СЊ РїРѕ РІРѕР·РјРѕР¶РЅРѕСЃС‚Рё
+  
+    //std::vector<Bomb> _bombs;
+    //std::vector<PlantedBomb> _planted_bombs;
 
 	void GenerateIndestructibleWalls(int IndestructibleWallsCount) { // ANTODO code style
 		int indestructible_walls_generated = 0;
@@ -195,8 +142,8 @@ class Game {
 			return;
 		}
 
-		// Очень маленькая карта, выход на новый уровенть нужно поставить куда угодно, кроме 
-		// неразрушаемой стены и бомбермена. Т.е. ставим на бонус или врага или пустую клетку
+		// РћС‡РµРЅСЊ РјР°Р»РµРЅСЊРєР°СЏ РєР°СЂС‚Р°, РІС‹С…РѕРґ РЅР° РЅРѕРІС‹Р№ СѓСЂРѕРІРµРЅС‚СЊ РЅСѓР¶РЅРѕ РїРѕСЃС‚Р°РІРёС‚СЊ РєСѓРґР° СѓРіРѕРґРЅРѕ, РєСЂРѕРјРµ 
+		// РЅРµСЂР°Р·СЂСѓС€Р°РµРјРѕР№ СЃС‚РµРЅС‹ Рё Р±РѕРјР±РµСЂРјРµРЅР°. Рў.Рµ. СЃС‚Р°РІРёРј РЅР° Р±РѕРЅСѓСЃ РёР»Рё РІСЂР°РіР° РёР»Рё РїСѓСЃС‚СѓСЋ РєР»РµС‚РєСѓ
 		while (true) {
 			const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount()); {
 				if (!_field.IsIn(IndestructibleWall, point) && !_field.IsIn(BoMan, point)) {
@@ -239,10 +186,10 @@ class Game {
 	}
 
 	void GenerateBonuses() {
-		const int num_of_walls_with_bonuses_of_one_type = (int)(_only_walls.size() / 30); // ANTODO 30 ва параметр																  
-									  // Бонус сохраняется при переходе на новый уровень.
+		const int num_of_walls_with_bonuses_of_one_type = (int)(_only_walls.size() / 30); // ANTODO 30 РІР° РїР°СЂР°РјРµС‚СЂ																  
+									  // Р‘РѕРЅСѓСЃ СЃРѕС…СЂР°РЅСЏРµС‚СЃСЏ РїСЂРё РїРµСЂРµС…РѕРґРµ РЅР° РЅРѕРІС‹Р№ СѓСЂРѕРІРµРЅСЊ.
 
-		// ANTODO переделать систему бонусов, чтоб не было мноо ифов (ПОТОМ)
+		// ANTODO РїРµСЂРµРґРµР»Р°С‚СЊ СЃРёСЃС‚РµРјСѓ Р±РѕРЅСѓСЃРѕРІ, С‡С‚РѕР± РЅРµ Р±С‹Р»Рѕ РјРЅРѕРѕ РёС„РѕРІ (РџРћРўРћРњ)
 		for (int i = 0; i < num_of_walls_with_bonuses_of_one_type; ++i) {
 			_field.Add(IncreasingNumberOfBombsDeliveredAtTime, _only_walls.back());
 			_only_walls.pop_back();
@@ -250,7 +197,7 @@ class Game {
 			_only_walls.pop_back();
 		}
 		
-		//по одному крутому бонусу
+		//РїРѕ РѕРґРЅРѕРјСѓ РєСЂСѓС‚РѕРјСѓ Р±РѕРЅСѓСЃСѓ
 		if (_only_walls.size() > 3) {										
 			_field.Add(AbilityToPassThroughWalls, _only_walls.back());
 			_only_walls.pop_back();
@@ -259,7 +206,7 @@ class Game {
 			_field.Add(DetonateBombAtTouchOfButton, _only_walls.back());
 			_only_walls.pop_back();
 		}
-		//со скоростью движения бомбермена не справился
+		//СЃРѕ СЃРєРѕСЂРѕСЃС‚СЊСЋ РґРІРёР¶РµРЅРёСЏ Р±РѕРјР±РµСЂРјРµРЅР° РЅРµ СЃРїСЂР°РІРёР»СЃСЏ
 	}
 
 	bool IsIsolated(Point enemy) {
@@ -269,7 +216,7 @@ class Game {
 				continue;
 			}
 
-			// ANTODO вынести в функцию 
+			// ANTODO РІС‹РЅРµСЃС‚Рё РІ С„СѓРЅРєС†РёСЋ 
 			if (!(_field.IsIn(Wall, point) || _field.IsIn(IndestructibleWall, point) || _field.IsIn(Enemy, point) || _field.IsIn(Bomb, point))) {
 				return false;
 			}
@@ -289,7 +236,7 @@ class Game {
 
 	//	const auto prev_dir = _direction_of_movement_of_enemy[num_in_enemy_coords_vector];
 
-		// ANTODO сгенерить перестановку {1, 2, 3}, пробежать по ней фором 
+		// ANTODO СЃРіРµРЅРµСЂРёС‚СЊ РїРµСЂРµСЃС‚Р°РЅРѕРІРєСѓ {1, 2, 3}, РїСЂРѕР±РµР¶Р°С‚СЊ РїРѕ РЅРµР№ С„РѕСЂРѕРј 
 
 		while (true) {
 			//int dir = (int)kPosibleDirection[prev_dir][rand() % 3];
@@ -311,18 +258,18 @@ class Game {
 	}
 
 	void MoveEnemies() {
-		// Хочу чтоб враг двигался по прямой до упора,
-		// с шансом 20% менял направление
-		// двигался до упора
+		// РҐРѕС‡Сѓ С‡С‚РѕР± РІСЂР°Рі РґРІРёРіР°Р»СЃСЏ РїРѕ РїСЂСЏРјРѕР№ РґРѕ СѓРїРѕСЂР°,
+		// СЃ С€Р°РЅСЃРѕРј 20% РјРµРЅСЏР» РЅР°РїСЂР°РІР»РµРЅРёРµ
+		// РґРІРёРіР°Р»СЃСЏ РґРѕ СѓРїРѕСЂР°
 
 		for (int i = 0; i < _enemies_coords.size(); ++i) {
 			//_enemy.PossibleChangeDirection(); 
 			// ANTODO -
-			// 0) Вызовем функцию, которая поменяет или не поменяет направление 
-			// 1) пусть сначала проверяется что враг может подвуниться и если может двигай
-			// 2) GetNewDirection - вернет новый дирешн, если вернет тот же самый который был, то это зачит то что двигаться некуда
-			// 2.1) Если вернулась то же направление то continue
-			// 2.2) Если вренулось другое, то пересетоваем дельту и хоим безусловно
+			// 0) Р’С‹Р·РѕРІРµРј С„СѓРЅРєС†РёСЋ, РєРѕС‚РѕСЂР°СЏ РїРѕРјРµРЅСЏРµС‚ РёР»Рё РЅРµ РїРѕРјРµРЅСЏРµС‚ РЅР°РїСЂР°РІР»РµРЅРёРµ 
+			// 1) РїСѓСЃС‚СЊ СЃРЅР°С‡Р°Р»Р° РїСЂРѕРІРµСЂСЏРµС‚СЃСЏ С‡С‚Рѕ РІСЂР°Рі РјРѕР¶РµС‚ РїРѕРґРІСѓРЅРёС‚СЊСЃСЏ Рё РµСЃР»Рё РјРѕР¶РµС‚ РґРІРёРіР°Р№
+			// 2) GetNewDirection - РІРµСЂРЅРµС‚ РЅРѕРІС‹Р№ РґРёСЂРµС€РЅ, РµСЃР»Рё РІРµСЂРЅРµС‚ С‚РѕС‚ Р¶Рµ СЃР°РјС‹Р№ РєРѕС‚РѕСЂС‹Р№ Р±С‹Р», С‚Рѕ СЌС‚Рѕ Р·Р°С‡РёС‚ С‚Рѕ С‡С‚Рѕ РґРІРёРіР°С‚СЊСЃСЏ РЅРµРєСѓРґР°
+			// 2.1) Р•СЃР»Рё РІРµСЂРЅСѓР»Р°СЃСЊ С‚Рѕ Р¶Рµ РЅР°РїСЂР°РІР»РµРЅРёРµ С‚Рѕ continue
+			// 2.2) Р•СЃР»Рё РІСЂРµРЅСѓР»РѕСЃСЊ РґСЂСѓРіРѕРµ, С‚Рѕ РїРµСЂРµСЃРµС‚РѕРІР°РµРј РґРµР»СЊС‚Сѓ Рё С…РѕРёРј Р±РµР·СѓСЃР»РѕРІРЅРѕ
 			if (IsIsolated(_enemies_coords[i])) {
 				continue;
 			}
@@ -346,7 +293,7 @@ class Game {
 		}
 
 		/*
-		//добиваюсь того, чтоб враг не стоял на месте
+		//РґРѕР±РёРІР°СЋСЃСЊ С‚РѕРіРѕ, С‡С‚РѕР± РІСЂР°Рі РЅРµ СЃС‚РѕСЏР» РЅР° РјРµСЃС‚Рµ
 
 		for (auto& enemy_coords : _enemies_coords) {
 			while (true) {
@@ -369,9 +316,9 @@ class Game {
 					MinusOneLife();
 				}
 
-				// Представь что враг всего 1. Даже так, я покажу 2 строчки, а ты сам подумай что может быть
+				// РџСЂРµРґСЃС‚Р°РІСЊ С‡С‚Рѕ РІСЂР°Рі РІСЃРµРіРѕ 1. Р”Р°Р¶Рµ С‚Р°Рє, СЏ РїРѕРєР°Р¶Сѓ 2 СЃС‚СЂРѕС‡РєРё, Р° С‚С‹ СЃР°Рј РїРѕРґСѓРјР°Р№ С‡С‚Рѕ РјРѕР¶РµС‚ Р±С‹С‚СЊ
 
-				_field.Remove(Enemy, enemy_coords); // представб что первый поток выполнил эту операцию, но не приступил к следующей
+				_field.Remove(Enemy, enemy_coords); // РїСЂРµРґСЃС‚Р°РІР± С‡С‚Рѕ РїРµСЂРІС‹Р№ РїРѕС‚РѕРє РІС‹РїРѕР»РЅРёР» СЌС‚Сѓ РѕРїРµСЂР°С†РёСЋ, РЅРѕ РЅРµ РїСЂРёСЃС‚СѓРїРёР» Рє СЃР»РµРґСѓСЋС‰РµР№
 				_field.Add(Enemy, new_pos);
 				enemy_coords = new_pos;
 				break;
@@ -380,7 +327,7 @@ class Game {
 		*/
 	}
 
-	void MinusOneLife() { // ANTODO добавить в назание чтото про move to start
+	void MinusOneLife() { // ANTODO РґРѕР±Р°РІРёС‚СЊ РІ РЅР°Р·Р°РЅРёРµ С‡С‚РѕС‚Рѕ РїСЂРѕ move to start
 		_field.Remove(BoMan, _bo_man_coords);
 		--_lives;
 
@@ -392,42 +339,42 @@ class Game {
 		_bo_man_coords = _start;
 		_field.Set(BoMan, _bo_man_coords);
 	}
-
+    /*
 	void ExplosionTimeController() {
-		if (_planted_bombs.empty()) {
+		
+        if (_bombs.empty()) {
 			return;
 		}
 		const auto cur_time = time(0);
 		// ANTODO std::partition
-		for (auto& bomb : _planted_bombs) {
+		for (auto& bomb : _bombs) {
 			if (cur_time - bomb._time >= time_from_planting_bomb_until_its_explosion) {
 				BombBlowUp(bomb);
 			}
 		}
 	}
-
+    */
 public:
 	Game(int rows_count, int cols_count)
 		: _field(rows_count, cols_count) {
 		int number_of_objects = (int)(_field.RowsCount() * _field.ColsCount() * 0.16);
 
 		while (true) {
-			GenerateIndestructibleWalls(number_of_objects);
+            GenerateIndestructibleWalls(number_of_objects);
+    
 			if (FieldCellAvailabilityTest(_field, _start)) {
 				break;
 			}
 			_field.Clear();
-		}
-
-		GenerateFrame();
+        }
 		GenerateWalls(number_of_objects);
-		_field.Set(BoMan, _bo_man_coords);
-		GenerateMagicDoor();
-		GenerateEnemies(_field.RowsCount());
-		GenerateDirectionOfEnemyMovement();
-		GenerateBonuses();
+        _field.Set(BoMan, _bo_man_coords);
+       GenerateMagicDoor();
+       //GenerateEnemies(_field.RowsCount());
+		//GenerateDirectionOfEnemyMovement();
+		//GenerateBonuses();
 	}
-
+    /*
 	void BlowAllBombsNow() {
 		if (_detonate_bomb_at_touch_of_button == false) {
 			return;
@@ -437,9 +384,9 @@ public:
 			BombBlowUp(bomb);
 		}
 	}
-
-	void GetInfoFromThisPoint(Point point) { // ANTODO плохое название
-		if (_field.IsIn(Empty, point)) { // ANTODO всегда возвращает false
+    */
+	void GetInfoFromThisPoint(Point point) { // ANTODO РїР»РѕС…РѕРµ РЅР°Р·РІР°РЅРёРµ
+		if (_field.IsIn(Empty, point)) { // ANTODO РІСЃРµРіРґР° РІРѕР·РІСЂР°С‰Р°РµС‚ false
 			return;
 		}
 
@@ -498,18 +445,18 @@ public:
 			return;
 		}
 
-		// ANTODO сначала легче проверить флаг
+		// ANTODO СЃРЅР°С‡Р°Р»Р° Р»РµРіС‡Рµ РїСЂРѕРІРµСЂРёС‚СЊ С„Р»Р°Рі
 		if ((_field.IsIn(Wall, new_pos) || _field.IsIn(Bomb, new_pos)) && _ability_to_pass_through_walls == false) {
 			return;
 		}
 
-		// ..понтяно и пиши понял в чем лажа частично. Поятно, что нужно сделать так что б там обе функции срабатывали оследовательно
-		// все. Да, тут можно на разных уронях синхронизировать. МОжно на уровне целых функций
-		// Т.е. пока работает MoveBoMan, не могут работать функции из Run.
-		// Можно чуть более локально синхронизацию сделать, чтоб операция движения
-		// параллельно с этим второй поток выполняет этот иф. Первый поток убрал врага с поля, но на новое место его еще не поставил
-		 // вот вторая	Допустим враг один. В этой строчке может сщлучиться так, что 
-						// врагов на поле вообще не будет и это как бы не очень правильно
+		// ..РїРѕРЅС‚СЏРЅРѕ Рё РїРёС€Рё РїРѕРЅСЏР» РІ С‡РµРј Р»Р°Р¶Р° С‡Р°СЃС‚РёС‡РЅРѕ. РџРѕСЏС‚РЅРѕ, С‡С‚Рѕ РЅСѓР¶РЅРѕ СЃРґРµР»Р°С‚СЊ С‚Р°Рє С‡С‚Рѕ Р± С‚Р°Рј РѕР±Рµ С„СѓРЅРєС†РёРё СЃСЂР°Р±Р°С‚С‹РІР°Р»Рё РѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ
+		// РІСЃРµ. Р”Р°, С‚СѓС‚ РјРѕР¶РЅРѕ РЅР° СЂР°Р·РЅС‹С… СѓСЂРѕРЅСЏС… СЃРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°С‚СЊ. РњРћР¶РЅРѕ РЅР° СѓСЂРѕРІРЅРµ С†РµР»С‹С… С„СѓРЅРєС†РёР№
+		// Рў.Рµ. РїРѕРєР° СЂР°Р±РѕС‚Р°РµС‚ MoveBoMan, РЅРµ РјРѕРіСѓС‚ СЂР°Р±РѕС‚Р°С‚СЊ С„СѓРЅРєС†РёРё РёР· Run.
+		// РњРѕР¶РЅРѕ С‡СѓС‚СЊ Р±РѕР»РµРµ Р»РѕРєР°Р»СЊРЅРѕ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЋ СЃРґРµР»Р°С‚СЊ, С‡С‚РѕР± РѕРїРµСЂР°С†РёСЏ РґРІРёР¶РµРЅРёСЏ
+		// РїР°СЂР°Р»Р»РµР»СЊРЅРѕ СЃ СЌС‚РёРј РІС‚РѕСЂРѕР№ РїРѕС‚РѕРє РІС‹РїРѕР»РЅСЏРµС‚ СЌС‚РѕС‚ РёС„. РџРµСЂРІС‹Р№ РїРѕС‚РѕРє СѓР±СЂР°Р» РІСЂР°РіР° СЃ РїРѕР»СЏ, РЅРѕ РЅР° РЅРѕРІРѕРµ РјРµСЃС‚Рѕ РµРіРѕ РµС‰Рµ РЅРµ РїРѕСЃС‚Р°РІРёР»
+		 // РІРѕС‚ РІС‚РѕСЂР°СЏ	Р”РѕРїСѓСЃС‚РёРј РІСЂР°Рі РѕРґРёРЅ. Р’ СЌС‚РѕР№ СЃС‚СЂРѕС‡РєРµ РјРѕР¶РµС‚ СЃС‰Р»СѓС‡РёС‚СЊСЃСЏ С‚Р°Рє, С‡С‚Рѕ 
+						// РІСЂР°РіРѕРІ РЅР° РїРѕР»Рµ РІРѕРѕР±С‰Рµ РЅРµ Р±СѓРґРµС‚ Рё СЌС‚Рѕ РєР°Рє Р±С‹ РЅРµ РѕС‡РµРЅСЊ РїСЂР°РІРёР»СЊРЅРѕ
 
 
 		if (_field.IsIn(Enemy, new_pos)) {
@@ -517,14 +464,14 @@ public:
 			return;
 		}
 
-		// Т.е. чтоб эти 3 строчки выполнялись атомарно
-		//что-то типа lock()
+		// Рў.Рµ. С‡С‚РѕР± СЌС‚Рё 3 СЃС‚СЂРѕС‡РєРё РІС‹РїРѕР»РЅСЏР»РёСЃСЊ Р°С‚РѕРјР°СЂРЅРѕ
+		//С‡С‚Рѕ-С‚Рѕ С‚РёРїР° lock()
 		_field.Add(BoMan, new_pos);
 		_field.Remove(BoMan, _bo_man_coords);
 		_bo_man_coords = new_pos;
 		//unlock(); ?..
 	}
-
+    /*
 	void DropBomb() {
 		if (_cur_bomb_count >= _max_bomb_num) {
 			return;
@@ -568,7 +515,7 @@ public:
 				if (_field.IsIn(Enemy, exploded_cell)) {
 					_field.Remove(Enemy, exploded_cell);
 
-					for (int i = 0; i < _enemies_coords.size(); ++i) { // ANTODO задуматься о более быстром поиске
+					for (int i = 0; i < _enemies_coords.size(); ++i) { // ANTODO Р·Р°РґСѓРјР°С‚СЊСЃСЏ Рѕ Р±РѕР»РµРµ Р±С‹СЃС‚СЂРѕРј РїРѕРёСЃРєРµ
 						if (_enemies_coords[i] == exploded_cell) {
 							_direction_of_movement_of_enemy[i] = _direction_of_movement_of_enemy.back();
 							_enemies_coords[i] = _enemies_coords.back();
@@ -588,7 +535,7 @@ public:
 					RunningSpeed = 1024,							//s
 					DetonateBombAtTouchOfButton = 2048,				//q
 				*/
-
+    /*
 				if (_field.IsIn(IncreaseBombBlastRadius, exploded_cell) || _field.IsIn(IncreasingNumberOfBombsDeliveredAtTime, exploded_cell) ||
 					_field.IsIn(AbilityToPassThroughWalls, exploded_cell) || _field.IsIn(ImmunityToExplosion, exploded_cell) ||
 					_field.IsIn(DetonateBombAtTouchOfButton, exploded_cell)) {
@@ -626,7 +573,7 @@ public:
 			MinusOneLife();
 		}
 	}
-
+    */
 	bool GameOver() {
 		return _game_over;
 	}
@@ -636,36 +583,74 @@ public:
 		_field.Print();
 	}
 
-	void Run() {
-		auto enemy_move_time = time(0);
+    
+        void Run() {
+            auto enemy_move_time = time(0);
 
-		while (!_game_over) {
-			// ANTODO при нажатии на was d не двигать бомермена, а помнить только клавишу и двигать тут
-			GetInfoFromThisPoint(_bo_man_coords);
-			//CheckBomberManPosi();
-			if (time(0) - enemy_move_time > 1) {
-				MoveEnemies();
-				enemy_move_time = time(0);
-			}
+            while (!_game_over) {
+                //GetInfoFromThisPoint(_bo_man_coords);
+                //if (time(0) - enemy_move_time > 1) {
+                //    MoveEnemies();
+                 //   enemy_move_time = time(0);
+                //}
 
-			ExplosionTimeController();
-			std::system("cls");
+    //            ExplosionTimeController();
+               // std::system("cls");
 
-			std::cout << "lives: " << _lives;
-			std::cout << " max bomb num: " << _max_bomb_num;
-			std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
-			if (_planted_bombs.size() == 1) {
-				std::cout << "timer: " << time(0) - _planted_bombs[0]._time << "/" << 3;
-			}
-			std::cout << std::endl;
+            //    std::cout << "lives: " << _lives;
+            //    std::cout << " max bomb num: " << _max_bomb_num;
+            //    std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
+      //          if (_planted_bombs.size() == 1) {
+      //              std::cout << "timer: " << time(0) - _planted_bombs[0]._time << "/" << 3;
+       //         }
+                //std::cout << std::endl;
 
-			_field.Print();
-		}
-		std::system("cls");
-		std::cout << (_you_won == true ? "YOU WON!" : "YOU LOST!") << std::endl;
-		std::system("pause");
-	}
+                _field.Print();
 
+                std::system("cls");
+            }
+            std::system("cls");
+            std::cout << (_you_won == true ? "YOU WON!" : "YOU LOST!") << std::endl;
+            std::system("pause");
+        }
+
+
+        /*
+
+        auto enemy_move_time = time(0);
+
+        while (!_game_over) {
+            // ANTODO РїСЂРё РЅР°Р¶Р°С‚РёРё РЅР° was d РЅРµ РґРІРёРіР°С‚СЊ Р±РѕРјРµСЂРјРµРЅР°, Р° РїРѕРјРЅРёС‚СЊ С‚РѕР»СЊРєРѕ РєР»Р°РІРёС€Сѓ Рё РґРІРёРіР°С‚СЊ С‚СѓС‚
+            GetInfoFromThisPoint(_bo_man_coords);
+            //CheckBomberManPosi();
+            if (time(0) - enemy_move_time > 1) {
+                MoveEnemies();
+                enemy_move_time = time(0);
+            }
+
+            //ExplosionTimeController();
+            std::system("cls");
+
+            std::cout << "lives: " << _lives;
+            std::cout << " max bomb num: " << _max_bomb_num;
+            std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
+            /*
+                if (_planted_bombs.size() == 1) {
+                    std::cout << "timer: " << time(0) - _planted_bombs[0]._time << "/" << 3;
+                }
+                std::cout << std::endl;
+
+                _field.Print();
+            }
+            */
+        /*
+            std::system("cls");
+            std::cout << (_you_won == true ? "YOU WON!" : "YOU LOST!") << std::endl;
+            std::system("pause");
+        }
+        */
+    
+    
 	void Stop() {
 		_game_over = true;
 	}
@@ -696,7 +681,63 @@ void g()
 #include <ios>
 
 int main() {
+        /*
+        std::cout << "Helloooooooooooooooooooooooooooooooooooo";
+        std::cout.seekp(5, std::ios_base::beg);
+        std::cout << '1';
+        std::cout.flush();
+        */
 
+        /*
+        std::thread _f_thread(f, 'f');
+        f('g');
+        _f_thread.join(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ _f_thread
+        std::system("pause");
+        return 0;
+        */
+        /*
+        for (int i = 0; i < 256; i++)
+        {
+        std::cout << i << "-" << (char)i << std::endl;
+        }
+        system("pause");
+        */
+
+        srand((int)(time(0)));
+        //Game game(17, 20);
+        Game game(17, 35);
+
+        std::thread _game_action_thread(&Game::Run, &game);
+
+        char command;
+        do
+        {
+            //game.Print(); 
+
+            command = _getch();
+
+            if (command == 27)
+            {
+                game.Stop();
+                break;
+            }
+
+            switch (command)
+            {
+            case 'w': game.MoveBoMan(Direction::Up); break;     game.Print();
+
+            case 'd': game.MoveBoMan(Direction::Right); break;      game.Print(); 
+
+            case 's': game.MoveBoMan(Direction::Down); break;       game.Print(); 
+
+            case 'a': game.MoveBoMan(Direction::Left); break;       game.Print(); 
+
+     //     case ' ': game.DropBomb(); break;
+     //     case 'q': game.BlowAllBombsNow(); break;
+            }
+        } while (!game.GameOver());
+
+        _game_action_thread.join();
 
 
 	/*
@@ -709,7 +750,7 @@ int main() {
 	/*
 	std::thread _f_thread(f, 'f');
 	f('g');
-	_f_thread.join(); // Подождать завершения _f_thread
+	_f_thread.join(); // РџРѕРґРѕР¶РґР°С‚СЊ Р·Р°РІРµСЂС€РµРЅРёСЏ _f_thread
 	std::system("pause");
 	return 0;
 	*/
@@ -720,7 +761,7 @@ int main() {
 	}
 	system("pause");
 	*/
-
+    /*
 	srand((int)(time(0)));
 	//Game game(17, 20);
 	Game game(17, 35);
@@ -746,10 +787,11 @@ int main() {
 		case 'd': game.MoveBoMan(Direction::Right); break;
 		case 's': game.MoveBoMan(Direction::Down); break;
 		case 'a': game.MoveBoMan(Direction::Left); break;
-		case ' ': game.DropBomb(); break;
-		case 'q': game.BlowAllBombsNow(); break;
+	//	case ' ': game.DropBomb(); break;
+	//	case 'q': game.BlowAllBombsNow(); break;
 		}
 	} while (!game.GameOver());
 
 	_game_action_thread.join();
+    */
 }
