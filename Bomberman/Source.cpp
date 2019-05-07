@@ -8,7 +8,6 @@
 #include <vector> 
 #include <queue>
 
-
 #include <chrono> 
 
 #include <thread> 
@@ -18,8 +17,19 @@
 
 #include "Field.h" 
 #include "Bomb.h"
+#include "Enemy.h"
 
-static const int time_from_planting_bomb_until_its_explosion = 3; // code style 
+
+static const int TimeFromPlantingBombUntilItsExplosion = 3;
+
+static const int kProbabilityOfBeingBehindWallBonusOfOneType = 40;
+
+static const int kNumberOfLivesAtTheStart = 3;
+
+static const Point kBombermanPositionAtTheBeginningOfTheGame(0, 0);
+
+static const std::vector<Point> kMoveDeltas = { Point(0,-1), Point(-1,0), Point(0,1), Point(1,0) };
+
 
 enum class Direction : int {
 	Left = 0,
@@ -27,8 +37,6 @@ enum class Direction : int {
 	Right = 2,
 	Down = 3
 };
-
-static const std::vector<Point> kMoveDeltas = { Point(0,-1), Point(-1,0), Point(0,1), Point(1,0) };
 
 bool AreAllCellsInThisFieldAvailable(Field& field, Point start) {
     std::queue<Point> i_use_this_to_mark_all_available_cells;
@@ -78,6 +86,7 @@ bool AreAllCellsInThisFieldAvailable(Field& field, Point start) {
     return true;
 }
 
+
 class Game {
 	Field _field;
 
@@ -87,7 +96,7 @@ class Game {
 	bool _you_won = false;
 	
 	// ANTODO добавить константу стартового кол-ва жизней. И добавить тут cur
-	int _lives = 3;
+	int _cur_lives;
 	
 	bool _ability_to_pass_through_walls = false;
 	bool _immunity_to_explosions = false;
@@ -97,14 +106,13 @@ class Game {
 	int _max_bomb_num = 1;
 	int _cur_bomb_count = 0; // ANTODO выплить
 
-	const Point _start = Point(1, 1); // ANTODO сделать static и вынести к общим параметрам
-	Point _bo_man_coords = _start;
+	Point _bo_man_coords = kBombermanPositionAtTheBeginningOfTheGame;
 
 	// ANTODO сделать класс Enemy
 	std::vector<Point> _enemies_coords;
 	std::vector<Point> _direction_of_movement_of_enemy; // ANTODO _direction_delta
 	
-	std::vector<Point> _only_walls; // ANTODO убрать по возможности
+	 // ANTODO убрать по возможности
   
     //std::vector<Bomb> _bombs;
     //std::vector<PlantedBomb> _planted_bombs;
@@ -123,35 +131,59 @@ class Game {
 		_field.Set(Empty, Point(1, 1)); // ANTODO
 	}
 
-	void GenerateWalls(int WallsCount) {
-		int walls_generated = 0;
-		while (walls_generated < WallsCount) {
+    std::vector<Point> GenerateWalls(int WallsCount) {
+        std::vector<Point> walls;
+
+		while (walls.size() < WallsCount) {
 			const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
 			if (_field.IsEmpty(point)) {
 				_field.Set(Wall, point);
-				_only_walls.push_back(point);
-				++walls_generated;
+                walls.push_back(point);
 			}
 		}
+        return walls;
 	}
 
-	void GenerateMagicDoor() {
-		if (!_only_walls.empty()) {
-			_field.Add(MagicDoor, _only_walls.back());
-			_only_walls.pop_back();
+	void GenerateMagicDoor(std::vector <Point> walls) {
+		if (!walls.empty()) {
+			_field.Add(MagicDoor, walls.back());
+			walls.pop_back();
 			return;
 		}
 
 		// Очень маленькая карта, выход на новый уровенть нужно поставить куда угодно, кроме 
 		// неразрушаемой стены и бомбермена. Т.е. ставим на бонус или врага или пустую клетку
 		while (true) {
-			const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount()); {
-				if (!_field.IsIn(IndestructibleWall, point) && !_field.IsIn(BoMan, point)) {
-					_field.Set(MagicDoor, point);
-					return;
+			const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
+				if (_field.IsIn(IndestructibleWall, point) || _field.IsIn(BoMan, point)) {
+					continue;
 				}
-			}
+                _field.Add(MagicDoor, point);
+                return;
 		}
+	}
+
+	void GenerateBonuses(std::vector <Point> walls) {
+		const int num_of_walls_with_bonuses_of_one_type = (int)(walls.size() / kProbabilityOfBeingBehindWallBonusOfOneType);
+
+		// ANTODO переделать систему бонусов, чтоб не было мноо ифов (ПОТОМ)
+		for (int i = 0; i < num_of_walls_with_bonuses_of_one_type; ++i) {
+			_field.Add(IncreasingNumberOfBombsDeliveredAtTime, walls.back());
+			walls.pop_back();
+			_field.Add(IncreaseBombBlastRadius, walls.back());
+			walls.pop_back();
+		}
+		
+		//по одному крутому бонусу
+		if (walls.size() > 3) {										
+			_field.Add(AbilityToPassThroughWalls, walls.back());
+			walls.pop_back();
+			_field.Add(ImmunityToExplosion, walls.back());
+			walls.pop_back();
+			_field.Add(DetonateBombAtTouchOfButton, walls.back());
+			walls.pop_back();
+		}
+		//со скоростью движения бомбермена не справился
 	}
 
 	void GenerateEnemies(int enemies_num) {
@@ -183,30 +215,6 @@ class Game {
 				break;
 			}
 		}
-	}
-
-	void GenerateBonuses() {
-		const int num_of_walls_with_bonuses_of_one_type = (int)(_only_walls.size() / 30); // ANTODO 30 ва параметр																  
-									  // Бонус сохраняется при переходе на новый уровень.
-
-		// ANTODO переделать систему бонусов, чтоб не было мноо ифов (ПОТОМ)
-		for (int i = 0; i < num_of_walls_with_bonuses_of_one_type; ++i) {
-			_field.Add(IncreasingNumberOfBombsDeliveredAtTime, _only_walls.back());
-			_only_walls.pop_back();
-			_field.Add(IncreaseBombBlastRadius, _only_walls.back());
-			_only_walls.pop_back();
-		}
-		
-		//по одному крутому бонусу
-		if (_only_walls.size() > 3) {										
-			_field.Add(AbilityToPassThroughWalls, _only_walls.back());
-			_only_walls.pop_back();
-			_field.Add(ImmunityToExplosion, _only_walls.back());
-			_only_walls.pop_back();
-			_field.Add(DetonateBombAtTouchOfButton, _only_walls.back());
-			_only_walls.pop_back();
-		}
-		//со скоростью движения бомбермена не справился
 	}
 
 	bool IsIsolated(Point enemy) {
@@ -329,14 +337,14 @@ class Game {
 
 	void MinusOneLife() { // ANTODO добавить в назание чтото про move to start
 		_field.Remove(BoMan, _bo_man_coords);
-		--_lives;
+		--_cur_lives;
 
-		if (_lives == 0) {
+		if (_cur_lives == 0) {
 			_game_over = true;
 			return;
 		}
 
-		_bo_man_coords = _start;
+		_bo_man_coords = kBombermanPositionAtTheBeginningOfTheGame;
 		_field.Set(BoMan, _bo_man_coords);
 	}
     /*
@@ -362,17 +370,20 @@ public:
 		while (true) {
             GenerateIndestructibleWalls(number_of_objects);
     
-			if (AreAllCellsInThisFieldAvailable(_field, _start)) {
+			if (AreAllCellsInThisFieldAvailable(_field, kBombermanPositionAtTheBeginningOfTheGame)) {
 				break;
 			}
 			_field.Clear();
         }
-		GenerateWalls(number_of_objects);
-        _field.Set(BoMan, _bo_man_coords);
-       GenerateMagicDoor();
-       //GenerateEnemies(_field.RowsCount());
+        _field.Set(BoMan, kBombermanPositionAtTheBeginningOfTheGame);
+        
+        std::vector<Point> walls = GenerateWalls(number_of_objects);
+        GenerateMagicDoor(walls);
+		GenerateBonuses(walls);
+        
+        //GenerateEnemies(_field.RowsCount());
 		//GenerateDirectionOfEnemyMovement();
-		//GenerateBonuses();
+        _cur_lives = kNumberOfLivesAtTheStart;
 	}
     /*
 	void BlowAllBombsNow() {
@@ -703,7 +714,7 @@ int main() {
 
         srand((int)(time(0)));
         //Game game(17, 20);
-        Game game(17, 35);
+        Game game(3, 3);
 
         std::thread _game_action_thread(&Game::Run, &game);
 
