@@ -36,6 +36,8 @@ namespace Bomberman
     };
     */
 
+    using Object::Point;
+
     class Field {
         const int _rows_count;
         const int _cols_count;
@@ -43,11 +45,11 @@ namespace Bomberman
         int** _field;
         std::string _str_field;
 
-        void SetSymbol(Bomberman::Object::Point point, char symbol) {
+        void SetSymbol(Point point, char symbol) {
             _str_field[(point._row_num + 1) * (_cols_count + 3) + point._col_num + 1] = symbol;
         }
 
-        void UpdateStringPoint(Bomberman::Object::Point point) { //это в последнюю очередь, не знаю, как рефакторить
+        void UpdateStringPoint(Point point) { //это в последнюю очередь, не знаю, как рефакторить
             if (IsEmpty(point))
             {
                 SetSymbol(point, ' ');
@@ -132,9 +134,11 @@ namespace Bomberman
 
         void InitializeStrField()
         {
+            static const char kLeftUp = (char)201; // '╔' // ANTODO
+            
             const std::string horizontal_part_of_field_frame(_cols_count, (char)205 /*'═'*/);
             
-            const std::string top_of_field_frame = (char)201 /*'╔'*/ + horizontal_part_of_field_frame + (char)187 /*'╗'*/ + '\n';
+            const std::string top_of_field_frame = kLeftUp + horizontal_part_of_field_frame + (char)187 /*'╗'*/ + '\n';
             const std::string lower_part_of_field_frame = (char)200 /*'╚'*/ + horizontal_part_of_field_frame + (char)188 /*'╝'*/ + '\n';
 
             std::string str_field_with_side_parts_of_frame(_rows_count * (_cols_count + 3), ' ');
@@ -169,35 +173,35 @@ namespace Bomberman
         void Clear() {
             for (int i = 0; i < _rows_count; ++i) {
                 for (int j = 0; j < _cols_count; ++j) {
-                    Set(FieldObject::Empty, Bomberman::Object::Point(i, j));
+                    Set(FieldObject::Empty, Point(i, j));
                 }
             }
         }
 
-        void Remove(FieldObject object, Bomberman::Object::Point point) {
+        void Remove(FieldObject object, Point point) {
             _field[point._row_num][point._col_num] &= ~static_cast<int>(object);
             UpdateStringPoint(point);
         }
 
-        bool IsIn(FieldObject object, Bomberman::Object::Point point) const {
+        bool IsIn(FieldObject object, Point point) const {
             return _field[point._row_num][point._col_num] & static_cast<int>(object);
         }
 
-        bool IsEmpty(Bomberman::Object::Point point) const {
+        bool IsEmpty(Point point) const {
             return _field[point._row_num][point._col_num] == static_cast<int>(FieldObject::Empty);
         }
 
-        void Add(FieldObject object, Bomberman::Object::Point point) {
+        void Add(FieldObject object, Point point) {
             _field[point._row_num][point._col_num] |= static_cast<int>(object);
             UpdateStringPoint(point);
         }
 
-        void Set(FieldObject object, Bomberman::Object::Point point) {
+        void Set(FieldObject object, Point point) {
             _field[point._row_num][point._col_num] = static_cast<int>(object);
             UpdateStringPoint(point);
         }
 
-        bool IsOnField(Bomberman::Object::Point point) const {
+        bool IsOnField(Point point) const {
             return (point._col_num >= 0 && point._col_num < ColsCount() && point._row_num >= 0 && point._row_num < RowsCount());
         }
 

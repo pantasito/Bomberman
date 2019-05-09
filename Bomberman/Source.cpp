@@ -1,4 +1,4 @@
-﻿// ☕ Привет
+// ☕ Привет
 #include <iostream> 
 
 #include <conio.h> 
@@ -73,7 +73,9 @@ namespace Bomberman
         std::vector<Object::Point> _direction_of_movement_of_enemy; // ANTODO _direction_delta
 
         bool AreAllCellsAvailable(int number_of_indestructible_walls) {
-            std::queue<Bomberman::Object::Point> cells_to_check;
+            assert(_field.IsEmpty(kStartPoint));
+
+            std::queue<Object::Point> cells_to_check;
 
             std::vector<std::vector<bool>> marked_cells(_field.RowsCount(), std::vector<bool>(_field.ColsCount(), false));
 
@@ -82,11 +84,11 @@ namespace Bomberman
             marked_cells[kStartPoint._row_num][kStartPoint._col_num] = true;
 
             while (!cells_to_check.empty()) {
-                Bomberman::Object::Point available_cell = cells_to_check.front();
+                const auto cell_to_check = cells_to_check.front();
                 cells_to_check.pop();
 
                 for (int i = 0; i < kMoveDeltas.size(); ++i) {
-                    const Bomberman::Object::Point cell = available_cell + kMoveDeltas[i];
+                    const auto cell = cell_to_check + kMoveDeltas[i];
 
                     if (!_field.IsOnField(cell)) {
                         continue;
@@ -112,12 +114,13 @@ namespace Bomberman
 
             return true;
         }
-
-        void GenerateIndestructibleWalls(int number_of_indestructible_walls) {
+        
+        void GenerateIndestructibleWalls(int number_of_indestructible_walls) 
+        {
             int indestructible_walls_generated = 0;
 
             while (indestructible_walls_generated < number_of_indestructible_walls) {
-                const Bomberman::Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
+                const Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
 
                 if (point == kStartPoint || _field.IsIn(FieldObject::IndestructibleWall, point)) {
                     continue;
@@ -126,13 +129,15 @@ namespace Bomberman
                 _field.Set(FieldObject::IndestructibleWall, point);
                 ++indestructible_walls_generated;
             }
+
+            assert(indestructible_walls_generated == number_of_indestructible_walls);
         }
 
-        std::vector<Bomberman::Object::Point> GenerateWalls(int walls_count) { // ANTODO code stylew
-            std::vector<Bomberman::Object::Point> walls;
+        std::vector<Object::Point> GenerateWalls(int walls_count) { // ANTODO code stylew
+            std::vector<Object::Point> walls;
 
             while (walls.size() < walls_count) {
-                const Bomberman::Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount()); //не делаю проверку IsOnField
+                const Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount()); //не делаю проверку IsOnField
                 if (_field.IsEmpty(point)) {
                     _field.Set(FieldObject::Wall, point);
                     walls.push_back(point);
@@ -141,7 +146,7 @@ namespace Bomberman
             return walls;
         }
 
-        void GenerateMagicDoor(std::vector<Bomberman::Object::Point> walls) { // ANTODO не вспомнил что нужно поменять
+        void GenerateMagicDoor(std::vector<Object::Point>& walls) {
             if (!walls.empty()) {
                 _field.Add(FieldObject::MagicDoor, walls.back());
                 walls.pop_back();
@@ -150,7 +155,7 @@ namespace Bomberman
 
             // Карта без стен, выход на новый уровень нужно поставить куда угодно, кроме неразрушаемой стены и бомбермена.
             while (true) {
-                const Bomberman::Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
+                const Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
                 if (_field.IsIn(FieldObject::IndestructibleWall, point) || _field.IsIn(FieldObject::BoMan, point)) {
                     continue;
                 }
@@ -159,7 +164,7 @@ namespace Bomberman
             }
         }
 
-        void GenerateBonuses(std::vector<Bomberman::Object::Point> walls) {
+        void GenerateBonuses(std::vector<Object::Point>& walls) {
             const int num_of_bonuses_of_one_type = (int)(walls.size() * kProbabilityBonusOfOneType);
 
             assert(walls.size() >= 2 * num_of_bonuses_of_one_type + 3);
@@ -382,7 +387,7 @@ namespace Bomberman
 
             _field.Set(FieldObject::BoMan, kStartPoint);
 
-            std::vector<Bomberman::Object::Point> walls = GenerateWalls(number_of_walls);
+            auto walls = GenerateWalls(number_of_walls);
             GenerateMagicDoor(walls);
             GenerateBonuses(walls);
 
