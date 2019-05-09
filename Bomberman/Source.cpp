@@ -1,4 +1,4 @@
-// ☕ Привет
+﻿// ☕ Привет
 #include <iostream> 
 
 #include <conio.h> 
@@ -14,6 +14,7 @@
 #include <thread> 
 #include <mutex> 
 
+#include <utility>
 #include <algorithm> 
 
 #include <memory> 
@@ -63,7 +64,7 @@ namespace Bomberman
         bool _detonate_bomb_at_touch_of_button = false;
 
         int _bomb_blast_radius = 1;
-        int _max_bomb_num = 1;
+        int _max_bomb_num = 10;
 
         std::vector<Object::Bomb> _bombs;
         std::vector<Object::Enemy> _enemies;
@@ -225,7 +226,7 @@ namespace Bomberman
 
         bool IsIsolated(Object::Point enemy) const {
             for (int i = 0; i < 4; ++i) {
-                const Bomberman::Object::Point point = enemy + kMoveDeltas[i];
+                const Object::Point point = enemy + kMoveDeltas[i];
                 if (!_field.IsOnField(point)) {
                     continue;
                 }
@@ -256,7 +257,7 @@ namespace Bomberman
                 //int dir = (int)kPosibleDirection[prev_dir][rand() % 3];
                 int dir = rand() % 4;
 
-                const Bomberman::Object::Point new_pos = point + kMoveDeltas[dir];
+                const Object::Point new_pos = point + kMoveDeltas[dir];
                 if (!_field.IsOnField(new_pos)) {
                     continue;
                 }
@@ -357,27 +358,31 @@ namespace Bomberman
             _field.Set(FieldObject::BoMan, _bo_man_coords);
         }
         
-        /*
         void ExplosionTimeController() {
-
             if (_bombs.empty()) {
                 return;
             }
             const auto cur_time = time(0);
             // ANTODO std::partition
+            // Удалять бомбы из массива только тут и только операцией resize (уменьшение)
+
+            // partition
+            // взрыв - убриает стены, бонусы, бомена, меняет время бомбам
+            // resize
+
             for (auto& bomb : _bombs) {
                 if (cur_time >= bomb._time_of_explosion) {
                     BombBlowUp(bomb);
                 }
             }
         }
-        */
+        
 
     public:
         Game(int rows_count, int cols_count)
             : _field(rows_count, cols_count) {
             const int number_of_indestructible_walls = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
-            const int number_of_walls = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
+            const int number_of_walls                = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
 
             do
             {
@@ -406,14 +411,14 @@ namespace Bomberman
             }
         }
         */
-        void TakeBonusOrMagicDoor(Bomberman::Object::Point point) { // ANTODO плохое название
+        void TakeBonusOrMagicDoor(Object::Point point) {
 
             if (_field.IsIn(FieldObject::Wall, point)) {
                 return;
             }
 
             if (_field.IsIn(FieldObject::MagicDoor, point)) {
-                if (!_enemies_coords.empty()) {
+                if (!_enemies.empty()) {
                     return;
                 }
                 _game_over = true;
@@ -491,7 +496,7 @@ namespace Bomberman
         }
        
         void DropBomb() {
-            if (_max_bomb_num > _bombs.size()) {
+            if (_bombs.size() >= _max_bomb_num) {
                 return;
             }
             
@@ -505,12 +510,18 @@ namespace Bomberman
                 _bo_man_exploded = true;
             }
 
+            //а нужна ли мне вообще возможность ставить бому на дверь? В каком случае такое может произойти?
+            //бомбермен может кинуть бомбу и остаться на месте, это оправдено, а с дверью кажется - лишнее
+
             /*
             if (_field.IsIn(FieldObject::MagicDoor, bomb._point)) {
                 _field.Add(FieldObject::Enemy, bomb._point);
-                _enemies_coords.push_back(bomb._point);
-                _direction_of_movement_of_enemy.push_back(kMoveDeltas[rand() % 4]);
-            }
+                _enemies.emplace_back(bomb._point, kMoveDeltas[rand() % 4]); //так как при создании врага мне не важно какое я ему даю направление
+                                                                        //даю ему любое направление. Будет плохо, если при создании враги будут ходить
+                                                                        //в начале жизни в одну сторону. Пока оставил очень плохой вариант, даже без 
+                                                                        //глобальной константы. Вернусь к этому, когда буду работать с Enemy
+                                                                        // может, кстати нормально с kMoveDeltas[rand() % 4]
+            }               
             */
 
             for (int i = 0; i < 4; ++i) {
@@ -534,28 +545,25 @@ namespace Bomberman
                         _field.Remove(FieldObject::Enemy, exploded_cell);
 
                         for (int i = 0; i < _enemies.size(); ++i) { // ANTODO задуматься о более быстром поиске
-                            if (_enemies[i] == exploded_cell) {
-                                _direction_of_movement_of_enemy[i] = _direction_of_movement_of_enemy.back();
-                                _enemies[i] = _enemies.back();
-
-                                _enemies_coords.pop_back();
-                                _direction_of_movement_of_enemy.pop_back();
+                            if (_enemies[i]._current_coords == exploded_cell) {
+                    //            _enemies.erase(_enemies.begin() + i);
                                 break;
                             }
                         }
                     }
 
-                    if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) || _field.IsIn(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, exploded_cell) ||
-                        _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) || _field.IsIn(FieldObject::ImmunityToExplosion, exploded_cell) ||
+                    if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) || 
+                        _field.IsIn(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, exploded_cell) ||
+                        _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) || 
+                        _field.IsIn(FieldObject::ImmunityToExplosion, exploded_cell) ||
                         _field.IsIn(FieldObject::DetonateBombAtTouchOfButton, exploded_cell)) {
-                        _field.Set(FieldObject::Enemy, exploded_cell);
-                        _enemies_coords.push_back(exploded_cell);
-                        _direction_of_movement_of_enemy.push_back(kMoveDeltas[rand() % 4]);
+                            _field.Set(FieldObject::Enemy, exploded_cell);
+                            _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
                     }
 
                     if (_field.IsIn(FieldObject::MagicDoor, exploded_cell)) {
                         _field.Add(FieldObject::Enemy, exploded_cell);
-                        _enemies_coords.push_back(exploded_cell);
+                        _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
                     }
 
                     if (_field.IsIn(FieldObject::Bomb, exploded_cell)) {
@@ -570,14 +578,14 @@ namespace Bomberman
                
                     _field.Remove(FieldObject::Bomb, bomb._point);
                     
-                    /*
-                    for (auto& b : _bombs) {
-                        if (b == bomb) {
-                            std::swap(b, _bombs.back());
-                            _bombs.pop_back();
+                    for (int i = 0; i < _bombs.size(); ++i) {
+                        if (bomb == _bombs[i]) {
+                            _bombs.erase(_bombs.begin() + i);
+
+                            //std::swap(_bombs[i], _bombs.back());
+                            //_bombs.pop_back();
                         }
                     }
-                    */
 
                     if (_bo_man_exploded) {
                         ReduceCurLifeByOneAndMoveToStart();
@@ -601,12 +609,12 @@ namespace Bomberman
                  //   enemy_move_time = time(0);
                 //}
 
-    //            ExplosionTimeController();
+                ExplosionTimeController();
                // std::system("cls");
 
-            //    std::cout << "lives: " << _lives;
-            //    std::cout << " max bomb num: " << _max_bomb_num;
-            //    std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
+                std::cout << "lives: " << _cur_lives << std::endl;
+       //         std::cout << " max bomb num: " << _max_bomb_num;
+      //          std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
       //          if (_planted_bombs.size() == 1) {
       //              std::cout << "timer: " << time(0) - _planted_bombs[0]._time << "/" << 3;
        //         }
@@ -688,6 +696,8 @@ namespace Bomberman
     */
 }
 
+using namespace Bomberman;
+
 #include <ios>
 
 int main() {
@@ -714,13 +724,13 @@ int main() {
         system("pause");
         */
 
-       // Bomberman::Object::Bomb b{ {0.3,0.5}, 14 };
+       // Object::Bomb b{ {0.3,0.5}, 14 };
 
         srand((int)(time(0)));
         //Game game(17, 20);
-        Bomberman::Game game(17, 50);
+        Game game(17, 50);
 
-        std::thread _game_action_thread(&Bomberman::Game::Run, &game);
+        std::thread _game_action_thread(&Game::Run, &game);
 
         char command;
         do
@@ -737,13 +747,13 @@ int main() {
 
             switch (command)
             {
-            case 'w': game.MoveBoMan(Bomberman::Direction::Up); break;
+            case 'w': game.MoveBoMan(Direction::Up); break;
 
-            case 'd': game.MoveBoMan(Bomberman::Direction::Right); break;
+            case 'd': game.MoveBoMan(Direction::Right); break;
 
-            case 's': game.MoveBoMan(Bomberman::Direction::Down); break;
+            case 's': game.MoveBoMan(Direction::Down); break;
 
-            case 'a': game.MoveBoMan(Bomberman::Direction::Left); break;
+            case 'a': game.MoveBoMan(Direction::Left); break;
 
             case ' ': game.DropBomb(); break;
      //     case 'q': game.BlowAllBombsNow(); break;
@@ -808,3 +818,18 @@ int main() {
 	_game_action_thread.join();
     */
 }
+
+//field[i][j] = 00000100100110
+
+/*
+1) Проверить что есть только стена и бомбермен.
+if (field[i][j] == (Wall | BoMan))
+
+
+
+2) Проверить что содердится стена и бонус
+00000100100110
+00000000101000
+
+if (field[i][j] & (Wall | BoMan) == (Wall | BoMan))
+*/
