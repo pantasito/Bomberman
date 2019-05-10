@@ -208,7 +208,6 @@ namespace Bomberman
         void Print()
         {
             std::cout << _str_field;
-            std::cout.flush();
         }
 
         int ColsCount() const { return _cols_count; }
