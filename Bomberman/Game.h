@@ -3,8 +3,6 @@
 
 #include <iostream> 
 
-#include <conio.h> 
-
 #include <ctime> 
 
 #include <string>
@@ -18,8 +16,6 @@
 
 #include <utility>
 #include <algorithm> 
-
-#include <iterator> 
 
 #include <memory> 
 
@@ -93,24 +89,22 @@ namespace Bomberman
 
         void MoveEnemies();
 
-        void ReduceCurLifeByOneAndMoveToStart();
+        void ReduceOneLifeAndMoveToStart();
 
-        void IsBoManExpolded(Point point, bool& IsBoManExploded);
-
-        void ExplosionsController();
+        void ExplosionsController(); // ANTODO Change name
 
     public:
         Game(int rows_count, int cols_count);
 
         void SetBombsTimerToBlowNow();
 
-        void TakeBonusOrMagicDoor(Object::Point point);
+        void CheckAndTakeBonusOrMagicDoor(Object::Point point);
 
         void MoveBoMan(Direction direction);
 
         void DropBomb();
 
-        void BombBlowUp(Object::Bomb& bomb);
+        void BombBlowUp(const Object::Bomb& bomb);
 
         void Print();
 

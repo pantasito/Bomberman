@@ -1,13 +1,14 @@
 ﻿// ☕ Привет
 
 #include "Game.h"
+#include <conio.h> 
+
 
 using namespace Bomberman;
 
 #include <map>
 
 int main() {
-
         srand((int)(time(0)));
         //Game game(17, 20);
         Game game(17, 50);
@@ -17,8 +18,8 @@ int main() {
         char command;
         do
         {   
-            system("cls");
-            game.Print(); 
+            //system("cls");
+            //game.Print(); 
 
             command = _getch();
 

@@ -1,4 +1,4 @@
-﻿// ☕ Привет
+// ☕ Привет
 
 #include "Game.h"
 
@@ -277,7 +277,7 @@ namespace Bomberman
     //  }
     }
 
-    void Game::ReduceCurLifeByOneAndMoveToStart() {
+    void Game::ReduceOneLifeAndMoveToStart() {
         _field.Remove(FieldObject::BoMan, _bo_man_coords);
         --_cur_lives;
 
@@ -290,27 +290,17 @@ namespace Bomberman
         _field.Set(FieldObject::BoMan, _bo_man_coords);
     }
 
-    void Game::IsBoManExpolded(Point point, bool& is_bo_man_exploded) {
-        if (_field.IsIn(FieldObject::BoMan, point) && _is_your_blast_immunity_activated == false) {
-            is_bo_man_exploded = true;
-        }
-    }
+   
 
     void Game::ExplosionsController() {
-        time_t cur_time = time(0);
+        const auto it_to_ready_bombs = std::partition(_bombs.begin(), _bombs.end(), [cur_time = time(0)](const Object::Bomb& bomb) {return bomb._time_of_explosion > cur_time; });
 
-        auto it = std::partition(_bombs.begin(), _bombs.end(), [cur_time](const Object::Bomb& bomb) {return bomb._time_of_explosion > cur_time; });
-
-        auto save_it = it;
-
-
-        while (it != _bombs.end()) {
-            BombBlowUp(*it);
-            _field.Remove(FieldObject::Bomb, it->_point);
-            ++it;
+        for (auto it = it_to_ready_bombs; it != _bombs.end(); ++it) {
+            BombBlowUp(*it_to_ready_bombs);
+            _field.Remove(FieldObject::Bomb, it_to_ready_bombs->_point);
         }
 
-        _bombs.erase(save_it, _bombs.end());
+        _bombs.erase(it_to_ready_bombs, _bombs.end());
     }
 
     Game::Game(int rows_count, int cols_count)
@@ -344,11 +334,11 @@ namespace Bomberman
         //кажется где-то взрыв записан, как BlowUp, а где-то, как Eхposion
         time_t cur_time = time(0);
         for (auto& bomb : _bombs) {
-            bomb._time_of_explosion = time(0) - kTimeFromPlantingBombToBlowUp;
+            bomb._time_of_explosion = cur_time;
         }
     }
 
-    void Game::TakeBonusOrMagicDoor(Object::Point point) {
+    void Game::CheckAndTakeBonusOrMagicDoor(Object::Point point) {
 
         if (_field.IsIn(FieldObject::Wall, point)) {
             return;
@@ -419,7 +409,7 @@ namespace Bomberman
 
 
         if (_field.IsIn(FieldObject::Enemy, new_pos)) {
-            ReduceCurLifeByOneAndMoveToStart();
+            ReduceOneLifeAndMoveToStart();
             return;
         }
 
@@ -441,10 +431,16 @@ namespace Bomberman
         _field.Add(FieldObject::Bomb, _bo_man_coords);
     }
 
-    void Game::BombBlowUp(Object::Bomb& bomb) {
+    void Game::BombBlowUp(const Object::Bomb& bomb) {
         bool is_bo_man_exploded = false;
 
-        IsBoManExpolded(bomb._point, is_bo_man_exploded);
+        const auto SetIsBoManExploded = [this, &is_bo_man_exploded](Point exploded_point) {
+            if (_field.IsIn(FieldObject::BoMan, exploded_point) && _is_your_blast_immunity_activated == false) {
+                is_bo_man_exploded = true;
+            }
+        };
+
+        SetIsBoManExploded(bomb._point);
 
         for (int i = 0; i < 4; ++i) {
             for (int j = 1; j <= _bomb_blast_radius; ++j) {
@@ -454,7 +450,7 @@ namespace Bomberman
                     break;
                 }
 
-                IsBoManExpolded(exploded_cell, is_bo_man_exploded);
+                SetIsBoManExploded(exploded_cell);
 
                 if (_field.IsIn(FieldObject::Wall, exploded_cell)) {
                     _field.Remove(FieldObject::Wall, exploded_cell);
@@ -464,7 +460,7 @@ namespace Bomberman
                 if (_field.IsIn(FieldObject::Enemy, exploded_cell)) {
                     _field.Remove(FieldObject::Enemy, exploded_cell);
 
-                    for (int i = 0; i < _enemies.size(); ++i) { // ANTODO задуматься о более быстром поиске
+                    for (int i = 0; i < _enemies.size(); ++i) {
                         if (_enemies[i]._current_coords == exploded_cell) {
                             //            _enemies.erase(_enemies.begin() + i);
                             break;
@@ -489,7 +485,7 @@ namespace Bomberman
                 if (_field.IsIn(FieldObject::Bomb, exploded_cell)) {
                     for (int i = 0; i < _bombs.size(); ++i) {
                         if (_bombs[i]._point == exploded_cell) {
-                            _bombs[i]._time_of_explosion = time(0) - kTimeFromPlantingBombToBlowUp;
+                            _bombs[i]._time_of_explosion = time(0);
                             break;
                         }
                     }
@@ -498,7 +494,7 @@ namespace Bomberman
         }
 
         if (is_bo_man_exploded) {
-            ReduceCurLifeByOneAndMoveToStart();
+            ReduceOneLifeAndMoveToStart();
         }
     }
 
@@ -511,7 +507,7 @@ namespace Bomberman
         auto enemy_move_time = time(0);
 
         while (!is_game_over) {
-            TakeBonusOrMagicDoor(_bo_man_coords);
+            CheckAndTakeBonusOrMagicDoor(_bo_man_coords);
             //if (time(0) - enemy_move_time > 1) {
             //    MoveEnemies();
              //   enemy_move_time = time(0);
@@ -521,9 +517,9 @@ namespace Bomberman
                 ExplosionsController();
             }
 
+            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
             std::system("cls");
-            std::cout << "lives: " << _cur_lives << std::endl;
-            std::cout << std::flush;
+            std::cout << "lives: " << _cur_lives << '\n';
             //         std::cout << " max bomb num: " << _max_bomb_num;
            //          std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
            //          if (_planted_bombs.size() == 1) {
@@ -532,8 +528,7 @@ namespace Bomberman
                      //std::cout << std::endl;
 
             _field.Print();
-
-            std::system("cls");
+            std::cout.flush();
         }
         std::system("cls");
         std::cout << (are_you_won == true ? "YOU WON!" : "YOU LOST!") << std::endl;
@@ -547,5 +542,4 @@ namespace Bomberman
     void Game::Stop() {
         is_game_over = true;
     }
-
 }

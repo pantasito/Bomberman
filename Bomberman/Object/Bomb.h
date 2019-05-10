@@ -18,11 +18,6 @@ namespace Bomberman
             
             Bomb(Bomb&& bomb) = default;
             Bomb& operator=(Bomb&& bomb) = default;
-
-            
-            bool operator == (const Bomb& bomb) const {
-                return (bomb._point == _point && bomb._time_of_explosion == _time_of_explosion);
-            }
         };
     }
 }
