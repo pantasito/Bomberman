@@ -4,8 +4,10 @@
 
 using namespace Bomberman;
 
+#include <map>
 
 int main() {
+
         srand((int)(time(0)));
         //Game game(17, 20);
         Game game(17, 50);
@@ -14,8 +16,9 @@ int main() {
 
         char command;
         do
-        {
-            //game.Print(); 
+        {   
+            system("cls");
+            game.Print(); 
 
             command = _getch();
 
@@ -36,7 +39,8 @@ int main() {
             case 'a': game.MoveBoMan(Direction::Left); break;
 
             case ' ': game.DropBomb(); break;
-     //     case 'q': game.BlowAllBombsNow(); break;
+       
+            case 'q': game.SetBombsTimerToBlowNow(); break;
             }
         } while (!game.IsGameOver());
 

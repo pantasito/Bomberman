@@ -19,6 +19,8 @@
 #include <utility>
 #include <algorithm> 
 
+#include <iterator> 
+
 #include <memory> 
 
 #include "Field.h" 
@@ -52,7 +54,6 @@ namespace Bomberman
         Field _field;
 
         // ANTODO - разбить на структурки
-        // ANTODO - все булы начинай с 
         bool is_game_over = false;
         bool are_you_won = false;
 
@@ -62,8 +63,8 @@ namespace Bomberman
         bool _is_your_blast_immunity_activated = false;
         bool _is_detonate_bomb_at_touch_of_button_activated = false;
 
-        int _bomb_blast_radius = 1;
-        int _max_bomb_num = 10;
+        int _bomb_blast_radius = 4;
+        int _max_bomb_num = 2;
 
         std::vector<Object::Bomb> _bombs;
         std::vector<Object::Enemy> _enemies;
@@ -79,7 +80,7 @@ namespace Bomberman
         std::vector<Object::Point> GenerateWalls(int walls_count);
 
         void GenerateMagicDoor(std::vector<Object::Point>& walls);
-         
+
         void GenerateBonuses(std::vector<Object::Point>& walls);
 
         //void GenerateEnemies(int enemies_num); 
@@ -94,14 +95,15 @@ namespace Bomberman
 
         void ReduceCurLifeByOneAndMoveToStart();
 
-        void ExplosionTimeController();
+        void IsBoManExpolded(Point point, bool& IsBoManExploded);
 
+        void ExplosionsController();
 
     public:
         Game(int rows_count, int cols_count);
-      
-        //void BlowAllBombsNow();
-        
+
+        void SetBombsTimerToBlowNow();
+
         void TakeBonusOrMagicDoor(Object::Point point);
 
         void MoveBoMan(Direction direction);

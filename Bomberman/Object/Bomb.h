@@ -15,7 +15,7 @@ namespace Bomberman
 
             Bomb(const Bomb& bomb) = delete;
             void operator=(const Bomb& bomb) = delete;
-
+            
             Bomb(Bomb&& bomb) = default;
             Bomb& operator=(Bomb&& bomb) = default;
 
