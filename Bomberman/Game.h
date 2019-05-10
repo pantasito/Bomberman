@@ -10,6 +10,7 @@
 #include <string>
 #include <vector> 
 #include <queue>
+#include <map>
 
 #include <chrono> 
 
@@ -30,6 +31,11 @@
 
 namespace Bomberman
 {
+    bool operator<(const Object::Enemy& lhs, const Object::Enemy& rhs) {
+        if (lhs._current_coords._row_num == rhs._current_coords._row_num) return lhs._current_coords._col_num < rhs._current_coords._col_num;
+        return lhs._current_coords._row_num < rhs._current_coords._row_num;
+    }
+ 
     static const int kTimeFromPlantingBombToBlowUp = 3;
 
     static const int kProbabilityBonusOfOneType = 0.1;
@@ -67,7 +73,7 @@ namespace Bomberman
         int _max_bomb_num = 2;
 
         std::vector<Object::Bomb> _bombs;
-        std::vector<Object::Enemy> _enemies;
+        std::map<Object::Enemy, bool> _enemies;
 
         Object::Point _bo_man_coords = kStartPoint;
 
@@ -83,7 +89,7 @@ namespace Bomberman
 
         void GenerateBonuses(std::vector<Object::Point>& walls);
 
-        //void GenerateEnemies(int enemies_num); 
+        void GenerateEnemies(int enemies_num); 
 
         //void GenerateDirectionOfEnemyMovement();
 

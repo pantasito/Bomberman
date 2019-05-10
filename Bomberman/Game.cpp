@@ -121,20 +121,19 @@ namespace Bomberman
         //со скоростью движения бомбермена не справился
     }
 
-    /*
-       void Game::GenerateEnemies(int enemies_num) {
-           int generated_enemies_counter = 0;
-           while (generated_enemies_counter < enemies_num) {
-               const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
-
-               if (_field.IsEmpty(point)) {
-                   _field.Add(Enemy, point);
-                   _enemies_coords.push_back(point);
-                   ++generated_enemies_counter;
-               }
-           }
-       }
-       */
+    void Game::GenerateEnemies(int enemies_num) {
+        int generated_enemies_counter = 0;
+        while (generated_enemies_counter < enemies_num) {
+            const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
+            
+            if (_field.IsEmpty(point)) {
+                const Point dir = kMoveDeltas[rand() % 4];
+                _field.Add(FieldObject::Enemy, point);
+                _enemies.emplace(Object::Enemy(point, dir), true);
+                ++generated_enemies_counter;
+            }
+        }
+    }
 
        /*
              void Game::GenerateDirectionOfEnemyMovement() { // ANTODO
@@ -330,7 +329,7 @@ namespace Bomberman
         GenerateMagicDoor(walls);
         GenerateBonuses(walls);
 
-        //GenerateEnemies(_field.RowsCount());
+        GenerateEnemies(_field.RowsCount());
         //GenerateDirectionOfEnemyMovement();
         _cur_lives = kNumberOfLivesAtTheStart;
     }
@@ -461,29 +460,29 @@ namespace Bomberman
                     break;
                 }
 
+                
                 if (_field.IsIn(FieldObject::Enemy, exploded_cell)) {
                     _field.Remove(FieldObject::Enemy, exploded_cell);
-
+                   // auto it = _enemies.find(exploded_cell); 
+                    //_enemies.erase(it);
+                    
                     for (int i = 0; i < _enemies.size(); ++i) { // ANTODO задуматься о более быстром поиске
-                        if (_enemies[i]._current_coords == exploded_cell) {
-                            //            _enemies.erase(_enemies.begin() + i);
-                            break;
-                        }
+                    
                     }
                 }
-
+            
                 if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) ||
                     _field.IsIn(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, exploded_cell) ||
                     _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) ||
                     _field.IsIn(FieldObject::ImmunityToExplosion, exploded_cell) ||
                     _field.IsIn(FieldObject::DetonateBombAtTouchOfButton, exploded_cell)) {
                     _field.Set(FieldObject::Enemy, exploded_cell);
-                    _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
+                    _enemies.emplace(exploded_cell, kMoveDeltas[rand() % 4]);
                 }
 
                 if (_field.IsIn(FieldObject::MagicDoor, exploded_cell)) {
                     _field.Add(FieldObject::Enemy, exploded_cell);
-                    _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
+                    _enemies.emplace(exploded_cell, kMoveDeltas[rand() % 4]);
                 }
 
                 if (_field.IsIn(FieldObject::Bomb, exploded_cell)) {
@@ -547,5 +546,4 @@ namespace Bomberman
     void Game::Stop() {
         is_game_over = true;
     }
-
 }
