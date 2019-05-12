@@ -3,6 +3,8 @@
 
 #include <string> 
 
+#include <vector> 
+
 #include <iostream> 
 
 #include <assert.h> 
@@ -15,16 +17,17 @@ namespace Bomberman
         Empty = 0,
         BoMan = 1,
         Wall = 2,
-        IndestructibleWall = 4,
-        Enemy = 8,
-        MagicDoor = 16,
-        Bomb = 32,
-        IncreaseBombBlastRadius = 64,					//r
-        IncreasingNumberOfBombsDeliveredAtTime = 128,	//n
-        AbilityToPassThroughWalls = 256,				//a
-        ImmunityToExplosion = 512,						//g
-        RunningSpeed = 1024,							//s
-        DetonateBombAtTouchOfButton = 2048,				//q
+        BoManAndWall = 4,
+        IndestructibleWall = 8,
+        Enemy = 16,
+        MagicDoor = 32,
+        Bomb = 64,
+        IncreaseBombBlastRadius = 128,					//r
+        IncreasingNumberOfBombs = 256,              	//n
+        AbilityToPassThroughWalls = 512,				//a
+        ImmunityToExplosion = 1024,						//g
+        RunningSpeed = 2048,							//s
+        DetonateBombAtTouchOfButton = 4096,				//q
     };
 
 
@@ -41,97 +44,41 @@ namespace Bomberman
             _str_field[(point._row_num + 1) * (_cols_count + 3) + point._col_num + 1] = symbol;
         }
 
-        /*
-        static const std::vector<std::pair<FieldObject, char>> v =
+        //static const std::vector<std::pair<FieldObject, char>> v =
+        const std::vector<std::pair<FieldObject, char>> FieldObjectAndObjectSymbol = 
         {
-        //обойти сравнение на размещение в клетке двух объектов могу создав третий объект?
-            std::pair<FieldObject, char>{FieldObject::Empty, ' '},
-            std::pair<FieldObject, char>{FieldObject::Enemy, 'ї' },
-
+            std::pair<FieldObject, char>{FieldObject::Empty, ' ' },
+            std::pair<FieldObject, char>{FieldObject::Enemy, (char)245 },              // 'ї'
+            std::pair<FieldObject, char>{FieldObject::BoManAndWall, (char)176 },       // '░' 
+            std::pair<FieldObject, char>{FieldObject::BoMan, 'o' },
+            std::pair<FieldObject, char>{FieldObject::IndestructibleWall, (char)219 }, // '█'
+            std::pair<FieldObject, char>{FieldObject::Bomb, (char)253 },               // '¤' 
+            std::pair<FieldObject, char>{FieldObject::Wall, (char)177 },               // '▒'
+            std::pair<FieldObject, char>{FieldObject::MagicDoor, (char)127 },          // '⌂'
+            std::pair<FieldObject, char>{FieldObject::IncreaseBombBlastRadius, 'r' },
+            std::pair<FieldObject, char>{FieldObject::IncreasingNumberOfBombs, 'n' },
+            std::pair<FieldObject, char>{FieldObject::AbilityToPassThroughWalls, 'i' },
+            std::pair<FieldObject, char>{FieldObject::ImmunityToExplosion, 'g' },
+            std::pair<FieldObject, char>{FieldObject::DetonateBombAtTouchOfButton, 'q' }
         };
-        */
-
-        void UpdateStringPoint(Point point) { //это в последнюю очередь, не знаю, как рефакторить
+        
+        void UpdateStringPoint(Point point) {
             if (IsEmpty(point))
             {
                 SetSymbol(point, ' ');
                 return;
             }
-            /*
-            for (auto& elem : v)
+
+            for (auto& elem : FieldObjectAndObjectSymbol)
             {
                 if (IsIn(elem.first, point))
                 {
                     SetSymbol(point, elem.second);
+                    return;
                 }
             }
-            */
-
-            if (IsIn(FieldObject::Enemy, point)) {
-                SetSymbol(point, 245);
-                return;
-            }
-
-            if (IsIn(FieldObject::Wall, point) && IsIn(FieldObject::BoMan, point)) {
-                SetSymbol(point, 176);
-                return;
-            }
-
-            if (IsIn(FieldObject::BoMan, point)) {
-                SetSymbol(point, 'o');
-                return;
-            }
-
-            if (IsIn(FieldObject::IndestructibleWall, point))
-            {
-                SetSymbol(point, 219);
-                return;
-            }
-
-            if (IsIn(FieldObject::Wall, point))
-            {
-                SetSymbol(point, 177);
-                return;
-            }
-
-            if (IsIn(FieldObject::Bomb, point)) {
-                SetSymbol(point, 253);
-                return;
-            }
-
-            if (IsIn(FieldObject::MagicDoor, point)) {
-                SetSymbol(point, 127);
-                return;
-            }
-
-            if (IsIn(FieldObject::IncreaseBombBlastRadius, point)) {
-                SetSymbol(point, 'r');
-                return;
-            }
-
-            if (IsIn(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, point)) {
-                SetSymbol(point, 'n');
-                return;
-            }
-
-            if (IsIn(FieldObject::AbilityToPassThroughWalls, point)) {
-                SetSymbol(point, 'a');
-                return;
-            }
-
-            if (IsIn(FieldObject::ImmunityToExplosion, point)) {
-                SetSymbol(point, 'g');
-                return;
-            }
-
-            if (IsIn(FieldObject::DetonateBombAtTouchOfButton, point)) {
-                SetSymbol(point, 'q');
-                return;
-            }
-
+            
             assert(IsEmpty(point));
-
-            SetSymbol(point, ' ');
         }
 
         void InitializeStrField() {

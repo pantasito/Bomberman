@@ -103,7 +103,7 @@ namespace Bomberman
 
         // ANTODO переделать систему бонусов, чтоб не было много ифов (ПОТОМ)
         for (int i = 0; i < num_of_bonuses_of_one_type; ++i) {
-            _field.Add(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, walls.back());
+            _field.Add(FieldObject::IncreasingNumberOfBombs, walls.back());
             walls.pop_back();
             _field.Add(FieldObject::IncreaseBombBlastRadius, walls.back());
             walls.pop_back();
@@ -263,9 +263,9 @@ namespace Bomberman
             return;
         }
 
-        if (_field.IsIn(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, point)) {
+        if (_field.IsIn(FieldObject::IncreasingNumberOfBombs, point)) {
             ++_bonuses._max_bomb_num;
-            _field.Remove(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, point);
+            _field.Remove(FieldObject::IncreasingNumberOfBombs, point);
             return;
         }
 
@@ -371,7 +371,7 @@ namespace Bomberman
                 }
             
                 if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) ||
-                    _field.IsIn(FieldObject::IncreasingNumberOfBombsDeliveredAtTime, exploded_cell) ||
+                    _field.IsIn(FieldObject::IncreasingNumberOfBombs, exploded_cell) ||
                     _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) ||
                     _field.IsIn(FieldObject::ImmunityToExplosion, exploded_cell) ||
                     _field.IsIn(FieldObject::DetonateBombAtTouchOfButton, exploded_cell)) {
