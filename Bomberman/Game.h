@@ -65,6 +65,8 @@ namespace Bomberman
         int _max_bomb_num      = 1;
     };
 
+    // ANTODO Add structure Bomberman { BoManBonuses, lives, _bo_man_coords}
+
     struct GameStatus {
         bool _is_game_over = false;
         bool _are_you_won  = false;

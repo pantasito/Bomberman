@@ -17,17 +17,16 @@ namespace Bomberman
         Empty = 0,
         BoMan = 1,
         Wall = 2,
-        BoManAndWall = 4,
-        IndestructibleWall = 8,
-        Enemy = 16,
-        MagicDoor = 32,
-        Bomb = 64,
-        IncreaseBombBlastRadius = 128,					//r
-        IncreasingNumberOfBombs = 256,              	//n
-        AbilityToPassThroughWalls = 512,				//a
-        ImmunityToExplosion = 1024,						//g
-        RunningSpeed = 2048,							//s
-        DetonateBombAtTouchOfButton = 4096,				//q
+        IndestructibleWall = 4, // ANTODO backup
+        Enemy = 8,
+        MagicDoor = 16,
+        Bomb = 32,
+        IncreaseBombBlastRadius = 64,					//r
+        IncreasingNumberOfBombs = 128,              	//n
+        AbilityToPassThroughWalls = 256,				//a
+        ImmunityToExplosion = 512,						//g
+        RunningSpeed = 1024,							//s
+        DetonateBombAtTouchOfButton = 2048,				//q
     };
 
 
@@ -44,22 +43,25 @@ namespace Bomberman
             _str_field[(point._row_num + 1) * (_cols_count + 3) + point._col_num + 1] = symbol;
         }
 
-        //static const std::vector<std::pair<FieldObject, char>> v =
-        const std::vector<std::pair<FieldObject, char>> FieldObjectAndObjectSymbol = 
+        static constexpr int UnionTwoFieldObjects(FieldObject obj1, FieldObject obj2)
         {
-            std::pair<FieldObject, char>{FieldObject::Empty, ' ' },
-            std::pair<FieldObject, char>{FieldObject::Enemy, (char)245 },              // 'ї'
-            std::pair<FieldObject, char>{FieldObject::BoManAndWall, (char)176 },       // '░' 
-            std::pair<FieldObject, char>{FieldObject::BoMan, 'o' },
-            std::pair<FieldObject, char>{FieldObject::IndestructibleWall, (char)219 }, // '█'
-            std::pair<FieldObject, char>{FieldObject::Bomb, (char)253 },               // '¤' 
-            std::pair<FieldObject, char>{FieldObject::Wall, (char)177 },               // '▒'
-            std::pair<FieldObject, char>{FieldObject::MagicDoor, (char)127 },          // '⌂'
-            std::pair<FieldObject, char>{FieldObject::IncreaseBombBlastRadius, 'r' },
-            std::pair<FieldObject, char>{FieldObject::IncreasingNumberOfBombs, 'n' },
-            std::pair<FieldObject, char>{FieldObject::AbilityToPassThroughWalls, 'i' },
-            std::pair<FieldObject, char>{FieldObject::ImmunityToExplosion, 'g' },
-            std::pair<FieldObject, char>{FieldObject::DetonateBombAtTouchOfButton, 'q' }
+            return static_cast<int>(obj1) | static_cast<int>(obj2);
+        }
+
+        static inline const std::vector<std::pair<int, char>> FieldObjectAndObjectSymbol = 
+        {
+            {static_cast<int>(FieldObject::Enemy), (char)245 },              // 'ї'
+            {UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall), (char)176 },       // '░' 
+            {static_cast<int>(FieldObject::BoMan), 'o' },
+            {static_cast<int>(FieldObject::IndestructibleWall), (char)219 }, // '█'
+            {static_cast<int>(FieldObject::Bomb), (char)253 },               // '¤' 
+            {static_cast<int>(FieldObject::Wall), (char)177 },               // '▒'
+            {static_cast<int>(FieldObject::MagicDoor), (char)127 },          // '⌂'
+            {static_cast<int>(FieldObject::IncreaseBombBlastRadius), 'r' },
+            {static_cast<int>(FieldObject::IncreasingNumberOfBombs), 'n' },
+            {static_cast<int>(FieldObject::AbilityToPassThroughWalls), 'i' },
+            {static_cast<int>(FieldObject::ImmunityToExplosion), 'g' },
+            {static_cast<int>(FieldObject::DetonateBombAtTouchOfButton), 'q' }
         };
         
         void UpdateStringPoint(Point point) {
@@ -138,6 +140,10 @@ namespace Bomberman
 
         bool IsIn(FieldObject object, Point point) const {
             return _field[point._row_num][point._col_num] & static_cast<int>(object);
+        }
+
+        bool IsIn(int objects_mask, Point point) const {
+            return (_field[point._row_num][point._col_num] & objects_mask) == objects_mask;
         }
 
         bool IsEmpty(Point point) const {
