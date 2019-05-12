@@ -134,17 +134,22 @@ namespace Bomberman
 
         void InitializeStrField()
         {
-            static const char kLeftUp = (char)201; // '╔' // ANTODO
+            static const char kLeftUp     = (char)201; // '╔'
+            static const char kRightUp    = (char)187; // '╗'
+            static const char kHorizontal = (char)205; // '═'
+            static const char kVertical   = (char)186; // '║'
+            static const char kLeftDown   = (char)200; // '╚' 
+            static const char kRightDown  = (char)188; // '╝' 
+
+            const std::string horizontal_part_of_field_frame(_cols_count, kHorizontal); 
             
-            const std::string horizontal_part_of_field_frame(_cols_count, (char)205 /*'═'*/);
-            
-            const std::string top_of_field_frame = kLeftUp + horizontal_part_of_field_frame + (char)187 /*'╗'*/ + '\n';
-            const std::string lower_part_of_field_frame = (char)200 /*'╚'*/ + horizontal_part_of_field_frame + (char)188 /*'╝'*/ + '\n';
+            const std::string top_of_field_frame = kLeftUp + horizontal_part_of_field_frame + kRightUp + '\n';
+            const std::string lower_part_of_field_frame = kLeftDown + horizontal_part_of_field_frame + kRightDown + '\n';
 
             std::string str_field_with_side_parts_of_frame(_rows_count * (_cols_count + 3), ' ');
             for (int i = 0; i < _rows_count; ++i) {
-                str_field_with_side_parts_of_frame[i * (_cols_count + 3)] = (char)186 /*'║'*/;
-                str_field_with_side_parts_of_frame[i * (_cols_count + 3) + _cols_count + 1] = (char)186 /*'║'*/;
+                str_field_with_side_parts_of_frame[i * (_cols_count + 3)] = kVertical;
+                str_field_with_side_parts_of_frame[i * (_cols_count + 3) + _cols_count + 1] = kVertical;
                 str_field_with_side_parts_of_frame[i * (_cols_count + 3) + _cols_count + 2] = '\n';
             }
 
