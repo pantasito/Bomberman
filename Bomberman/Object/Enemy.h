@@ -9,16 +9,18 @@ namespace Bomberman
     {
         struct Enemy {
             Point _current_coords;
-            Point _direction_of_movement;
+          
+            Point _direction_of_movement; // ANTODO delta 
+            //UpdateDirectionAndMove
+            
             int number_of_moves_made_in_one_direction = 0;
             
             Enemy(Point current_coords, Point direction_of_movement) :
                 _current_coords(current_coords), _direction_of_movement(direction_of_movement) 
             {}
             
-            void UpdateDirectionAndMove(const Point dir) {
+            void UpdateDirection(const Point dir) {
                 _direction_of_movement = dir;
-                _current_coords = _current_coords + dir;
                 number_of_moves_made_in_one_direction = 0;
             }
 

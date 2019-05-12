@@ -140,7 +140,8 @@ namespace Bomberman
         // ANTODO сгенерить перестановку {1, 2, 3}, пробежать по ней фором 
 
         // не придумал пока способ хорошо сгенерировать такую перестановку, сделал по-другому По идее по сложности не хуже 
-        std::vector <Point> possible_directions;
+        char possible_directions[4];
+        int possible_directions_count = 0;
 
         for (int i = 0; i < 4; ++i) {
             if (kMoveDeltas[i] == current_direction) {
@@ -148,14 +149,15 @@ namespace Bomberman
             }
             
             const Point tested_position = enemy._current_coords + kMoveDeltas[i];
-            if (_field.IsOnField(tested_position) && _field.IsEmpty(tested_position)) {
-                possible_directions.push_back(kMoveDeltas[i]);
+            if (_field.IsOnField(tested_position) && _field.IsEmpty(tested_position)) { // ANTODO
+                possible_directions[possible_directions_count] = i;
+                ++possible_directions_count;
             }
         }
-        if (possible_directions.empty()) {
+        if (possible_directions_count == 0) {
             return current_direction;
         }
-        return possible_directions[rand() % possible_directions.size()];
+        return kMoveDeltas[possible_directions[rand() % possible_directions_count]];
     }
     
     bool Game::IsEnemyKeepDirection(const Object::Enemy& enemy) const {
@@ -164,22 +166,17 @@ namespace Bomberman
 
     void Game::MoveEnemies() {
         for (auto& enemy : _enemies) {
-
-            const Point coordinates = enemy._current_coords + enemy._direction_of_movement;
-            if (_field.IsOnField(coordinates) && _field.IsEmpty(coordinates) && IsEnemyKeepDirection(enemy)) {
-                _field.Remove(FieldObject::Enemy, enemy._current_coords);
-                enemy.MoveInCurrentDirection();
-                _field.Add(FieldObject::Enemy, enemy._current_coords);
-                continue;
-            }
-
-            const Point old_direction = enemy._direction_of_movement;
-            const Point new_direction = GetNewDirection(enemy);
-            if (old_direction == new_direction) {
-                continue;
+            const Point new_coordinates = enemy._current_coords + enemy._direction_of_movement;
+            
+            if (!_field.IsOnField(new_coordinates) || !_field.IsEmpty(new_coordinates) || !IsEnemyKeepDirection(enemy)) { // ANTODO check possible enemy pos
+                const Point new_direction = GetNewDirection(enemy);
+                if (enemy._direction_of_movement == new_direction) {
+                    continue;
+                }
+                enemy.UpdateDirection(new_direction);
             }
             _field.Remove(FieldObject::Enemy, enemy._current_coords);
-            enemy.UpdateDirectionAndMove(new_direction);
+            enemy.MoveInCurrentDirection();
             _field.Add(FieldObject::Enemy, enemy._current_coords);
         }
     }
@@ -365,8 +362,12 @@ namespace Bomberman
                 if (_field.IsIn(FieldObject::Enemy, exploded_cell)) {
                     _field.Remove(FieldObject::Enemy, exploded_cell);
 
-                    auto dead_enemy = std::partition(_enemies.begin(), _enemies.end(), [exploded_cell](const Object::Enemy& enemy) { return enemy._current_coords != exploded_cell; });
-                    _enemies.erase(dead_enemy, _enemies.end());                    
+                    auto exploded_enemy_it = find_if(_enemies.begin(), _enemies.end(), [exploded_cell](const Object::Enemy& enemy) { return enemy._current_coords == exploded_cell; });
+                    assert(exploded_enemy_it != _enemies.end());
+                    
+                    std::swap(*exploded_enemy_it, _enemies.back());
+                    _enemies.pop_back();
+
                     break;
                 }
             
@@ -394,6 +395,8 @@ namespace Bomberman
                 }
             }
         }
+
+
 
         if (is_bo_man_exploded) {
             ReduceOneLifeAndMoveToStart();

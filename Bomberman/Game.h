@@ -41,7 +41,7 @@ namespace Bomberman
 
     static const std::vector<Object::Point> kMoveDeltas = { Object::Point(-1, 0), Object::Point(0, 1), Object::Point(1, 0), Object::Point(0,-1) };
 
-    enum class Direction : int {
+    enum class Direction : char {
         Up = 0,
         Right = 1,
         Down = 2,
