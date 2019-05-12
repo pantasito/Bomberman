@@ -27,14 +27,6 @@ namespace Bomberman
         DetonateBombAtTouchOfButton = 2048,				//q
     };
 
-    /*
-    static const std::vector<std::pair<FieldObject, char>> v =
-    {
-    //обойти сравнение на размещение в клетке двух объектов могу создав третий объект?
-        std::pair<FieldObject, char>{Tested, (char)251},
-        std::pair<FieldObject, char>{Frame1 , 205}
-    };
-    */
 
     using Object::Point;
 
@@ -48,6 +40,16 @@ namespace Bomberman
         void SetSymbol(Point point, char symbol) {
             _str_field[(point._row_num + 1) * (_cols_count + 3) + point._col_num + 1] = symbol;
         }
+
+        /*
+        static const std::vector<std::pair<FieldObject, char>> v =
+        {
+        //обойти сравнение на размещение в клетке двух объектов могу создав третий объект?
+            std::pair<FieldObject, char>{FieldObject::Empty, ' '},
+            std::pair<FieldObject, char>{FieldObject::Enemy, 'ї' },
+
+        };
+        */
 
         void UpdateStringPoint(Point point) { //это в последнюю очередь, не знаю, как рефакторить
             if (IsEmpty(point))
@@ -132,8 +134,7 @@ namespace Bomberman
             SetSymbol(point, ' ');
         }
 
-        void InitializeStrField()
-        {
+        void InitializeStrField() {
             static const char kLeftUp     = (char)201; // '╔'
             static const char kRightUp    = (char)187; // '╗'
             static const char kHorizontal = (char)205; // '═'
@@ -141,8 +142,8 @@ namespace Bomberman
             static const char kLeftDown   = (char)200; // '╚' 
             static const char kRightDown  = (char)188; // '╝' 
 
-            const std::string horizontal_part_of_field_frame(_cols_count, kHorizontal); 
-            
+            const std::string horizontal_part_of_field_frame(_cols_count, kHorizontal);
+
             const std::string top_of_field_frame = kLeftUp + horizontal_part_of_field_frame + kRightUp + '\n';
             const std::string lower_part_of_field_frame = kLeftDown + horizontal_part_of_field_frame + kRightDown + '\n';
 

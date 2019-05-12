@@ -78,7 +78,7 @@ namespace Bomberman
         
         int _lives;
 
-        std::vector<Object::Bomb> _bombs;
+        std::vector<Object::Bomb>  _bombs;
         std::vector<Object::Enemy> _enemies;
 
         Object::Point _bo_man_coords = kStartPoint;
