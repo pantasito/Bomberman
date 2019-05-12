@@ -10,22 +10,29 @@ namespace Bomberman
         struct Enemy {
             Point _current_coords;
             Point _direction_of_movement;
+            int number_of_moves_made_in_one_direction = 0;
             
             Enemy(Point current_coords, Point direction_of_movement) :
                 _current_coords(current_coords), _direction_of_movement(direction_of_movement) 
             {}
             
+            void UpdateDirectionAndMove(const Point dir) {
+                _direction_of_movement = dir;
+                _current_coords = _current_coords + dir;
+                number_of_moves_made_in_one_direction = 0;
+            }
+
+            void MoveInCurrentDirection() {
+                _current_coords = _current_coords + _direction_of_movement;
+                ++number_of_moves_made_in_one_direction;
+            }
+
             Enemy(Enemy&& enemy) = default;
             Enemy& operator=(Enemy&& enemy) = default;
 
             Enemy enemy(const Enemy& enemy) = delete;
             void operator=(const Enemy& enemy) = delete;
-            /*
-            bool operator<(const Enemy& enemy) {
-                if (_current_coords._row_num == enemy._current_coords._row_num) return _current_coords._col_num < enemy._current_coords._col_num;
-                return _current_coords._row_num < enemy._current_coords._row_num;
-            }
-            */
         };
     }
 }
+

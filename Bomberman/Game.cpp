@@ -125,162 +125,67 @@ namespace Bomberman
         int generated_enemies_counter = 0;
         while (generated_enemies_counter < enemies_num) {
             const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
-            
             if (_field.IsEmpty(point)) {
-                const Point dir = kMoveDeltas[rand() % 4];
                 _field.Add(FieldObject::Enemy, point);
-                _enemies.emplace(Object::Enemy(point, dir), true);
+                _enemies.emplace_back(point, kMoveDeltas[rand() % 4]);
                 ++generated_enemies_counter;
             }
         }
     }
-
-       /*
-             void Game::GenerateDirectionOfEnemyMovement() { // ANTODO
-                 for (int i = 0; i < _enemies_coords.size(); ++i) {
-                     for (int j = 0; j < 4; ++j) {
-                         const Point possible_direction = _enemies_coords[i] + kMoveDeltas[j];
-                         if (IsIsolated(possible_direction)) {
-                             _direction_of_movement_of_enemy.emplace_back(0, 0);
-                             break;
-                         }
-                         if (!_field.IsOnField(possible_direction)) {
-                             continue;
-                         }
-
-                         _direction_of_movement_of_enemy.push_back(kMoveDeltas[j]);
-                         break;
-                     }
-                 }
-             }
-             */
-
-    bool Game::IsIsolated(Object::Point enemy) const {
-        for (int i = 0; i < 4; ++i) {
-            const Object::Point point = enemy + kMoveDeltas[i];
-            if (!_field.IsOnField(point)) {
-                continue;
-            }
-
-            // ANTODO вынести в функцию 
-            if (!(_field.IsIn(FieldObject::Wall, point) || _field.IsIn(FieldObject::IndestructibleWall, point) || _field.IsIn(FieldObject::Enemy, point) || _field.IsIn(FieldObject::Bomb, point))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    Object::Point Game::RefreshNewPosAndDirection(Object::Point point, int num_in_enemy_coords_vector) {
-
-        static const Direction kPosibleDirection[4][3] =
-        {
-            {Direction::Up, Direction::Right, Direction::Down},
-            {Direction::Left, Direction::Right, Direction::Down},
-            {Direction::Up, Direction::Left, Direction::Down},
-            {Direction::Up, Direction::Right, Direction::Left},
-        };
+    
+    Point Game::GetNewDirection(const Object::Enemy& enemy) const {
+        const Point current_direction = enemy._direction_of_movement;
 
         //	const auto prev_dir = _direction_of_movement_of_enemy[num_in_enemy_coords_vector];
+        // ANTODO сгенерить перестановку {1, 2, 3}, пробежать по ней фором 
 
-            // ANTODO сгенерить перестановку {1, 2, 3}, пробежать по ней фором 
+        // не придумал пока способ хорошо сгенерировать такую перестановку, сделал по-другому По идее по сложности не хуже 
+        std::vector <Point> possible_directions;
 
-        while (true) {
-            //int dir = (int)kPosibleDirection[prev_dir][rand() % 3];
-            int dir = rand() % 4;
-
-            const Object::Point new_pos = point + kMoveDeltas[dir];
-            if (!_field.IsOnField(new_pos)) {
+        for (int i = 0; i < 4; ++i) {
+            if (kMoveDeltas[i] == current_direction) {
                 continue;
             }
-            if (IsIsolated(new_pos)) {
-                return point;
+            
+            const Point tested_position = enemy._current_coords + kMoveDeltas[i];
+            if (_field.IsOnField(tested_position) && _field.IsEmpty(tested_position)) {
+                possible_directions.push_back(kMoveDeltas[i]);
             }
-            if (_field.IsIn(FieldObject::Wall, new_pos) || _field.IsIn(FieldObject::IndestructibleWall, new_pos) || _field.IsIn(FieldObject::Bomb, new_pos) || _field.IsIn(FieldObject::Enemy, new_pos)) {
-                continue;
-            }
-            //_direction_of_movement_of_enemy[num_in_enemy_coords_vector] = kMoveDeltas[dir];
-            return point + kMoveDeltas[dir];
         }
+        if (possible_directions.empty()) {
+            return current_direction;
+        }
+        return possible_directions[rand() % possible_directions.size()];
     }
-
+    
     void Game::MoveEnemies() {
-        // Хочу чтоб враг двигался по прямой до упора,
-        // с шансом 20% менял направление
-        // двигался до упора
+        for (auto& enemy : _enemies) {
 
-        //  for (int i = 0; i < _enemies.size(); ++i) {
-            //_enemy.PossibleChangeDirection(); 
-            // ANTODO -
-            // 0) Вызовем функцию, которая поменяет или не поменяет направление 
-            // 1) пусть сначала проверяется что враг может подвуниться и если может двигай
-            // 2) GetNewDirection - вернет новый дирешн, если вернет тот же самый который был, то это зачит, что двигаться некуда
-            // 2.1) Если вернулась то же направление то continue
-            // 2.2) Если вренулось другое, то пересетоваем дельту и хоим безусловно
-            /*
+            const Point coordinates = enemy._current_coords + enemy._direction_of_movement;
+            if (_field.IsOnField(coordinates) && _field.IsEmpty(coordinates)) {
 
-            if (IsIsolated(_enemies_coords[i])) {
+                _field.Remove(FieldObject::Enemy, enemy._current_coords);
+                enemy.MoveInCurrentDirection();
+                _field.Add(FieldObject::Enemy, enemy._current_coords);
                 continue;
             }
 
-            Point new_pos = _enemies_coords[i] + _direction_of_movement_of_enemy[i];
-            if (!_field.IsOnField(new_pos)) {
-                new_pos = RefreshNewPosAndDirection(_enemies_coords[i], i);
+            const Point old_direction = enemy._direction_of_movement;
+            const Point new_direction = GetNewDirection(enemy);
+            if (old_direction == new_direction) {
+                continue;
             }
-
-            if (_field.IsIn(Wall, new_pos) || _field.IsIn(IndestructibleWall, new_pos) || _field.IsIn(Enemy, new_pos) || _field.IsIn(Bomb, new_pos)) {
-                new_pos = RefreshNewPosAndDirection(_enemies_coords[i], i);
-            }
-
-            if (_field.IsIn(BoMan, new_pos)) {
-                ReduceCurLifeByOneAndMoveBoManToStart();
-            }
-
-            _field.Remove(Enemy, _enemies_coords[i]);
-            _field.Add(Enemy, new_pos);
-            _enemies_coords[i] = new_pos;
+            _field.Remove(FieldObject::Enemy, enemy._current_coords);
+            enemy.UpdateDirectionAndMove(new_direction);
+            _field.Add(FieldObject::Enemy, enemy._current_coords);
         }
-        */
-        /*
-    //добиваюсь того, чтоб враг не стоял на месте
-
-    for (auto& enemy_coords : _enemies_coords) {
-        while (true) {
-            if (IsIsolated(enemy_coords)) {
-                break;
-            }
-            int dir = rand() % 4;
-            const Point new_pos = kMoveDeltas[dir] + enemy_coords;
-
-            if (!_field.IsOnField(new_pos)) {
-                continue;
-            }
-
-            if (_field.IsIn(Wall, new_pos) || _field.IsIn(IndestructibleWall, new_pos)
-                || _field.IsIn(Bomb, new_pos) || _field.IsIn(Enemy, new_pos)) {
-                continue;
-            }
-
-            if (_field.IsIn(BoMan, new_pos)) {
-                MinusOneLife();
-            }
-
-            // Представь что враг всего 1. Даже так, я покажу 2 строчки, а ты сам подумай что может быть
-
-            _field.Remove(Enemy, enemy_coords); // представб что первый поток выполнил эту операцию, но не приступил к следующей
-            _field.Add(Enemy, new_pos);
-            enemy_coords = new_pos;
-            break;
-        }
-    }
-    */
-    //  }
     }
 
     void Game::ReduceOneLifeAndMoveToStart() {
         _field.Remove(FieldObject::BoMan, _bo_man_coords);
-        --_cur_lives;
+        --_lives;
 
-        if (_cur_lives == 0) {
+        if (_lives == 0) {
             is_game_over = true;
             return;
         }
@@ -288,8 +193,6 @@ namespace Bomberman
         _bo_man_coords = kStartPoint;
         _field.Set(FieldObject::BoMan, _bo_man_coords);
     }
-
-   
 
     void Game::ExplosionsController() {
         const auto it_to_ready_bombs = std::partition(_bombs.begin(), _bombs.end(), [cur_time = time(0)](const Object::Bomb& bomb) {return bomb._time_of_explosion > cur_time; });
@@ -320,8 +223,7 @@ namespace Bomberman
         GenerateBonuses(walls);
 
         GenerateEnemies(_field.RowsCount());
-        //GenerateDirectionOfEnemyMovement();
-        _cur_lives = kNumberOfLivesAtTheStart;
+        _lives = kNumberOfLivesAtTheStart;
     }
 
     void Game::SetBombsTimerToBlowNow() {
@@ -459,12 +361,11 @@ namespace Bomberman
                 
                 if (_field.IsIn(FieldObject::Enemy, exploded_cell)) {
                     _field.Remove(FieldObject::Enemy, exploded_cell);
-                   // auto it = _enemies.find(exploded_cell); 
-                    //_enemies.erase(it);
+
+                    auto dead_enemy = std::partition(_enemies.begin(), _enemies.end(), [exploded_cell](const Object::Enemy& enemy) { return enemy._current_coords != exploded_cell; });
+                    _enemies.erase(dead_enemy, _enemies.end());
                     
-                    for (int i = 0; i < _enemies.size(); ++i) { // ANTODO задуматься о более быстром поиске
-                    
-                    }
+                    break;
                 }
             
                 if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) ||
@@ -473,12 +374,12 @@ namespace Bomberman
                     _field.IsIn(FieldObject::ImmunityToExplosion, exploded_cell) ||
                     _field.IsIn(FieldObject::DetonateBombAtTouchOfButton, exploded_cell)) {
                     _field.Set(FieldObject::Enemy, exploded_cell);
-                    _enemies.emplace(exploded_cell, kMoveDeltas[rand() % 4]);
+                    _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
                 }
 
                 if (_field.IsIn(FieldObject::MagicDoor, exploded_cell)) {
                     _field.Add(FieldObject::Enemy, exploded_cell);
-                    _enemies.emplace(exploded_cell, kMoveDeltas[rand() % 4]);
+                    _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
                 }
 
                 if (_field.IsIn(FieldObject::Bomb, exploded_cell)) {
@@ -507,10 +408,10 @@ namespace Bomberman
 
         while (!is_game_over) {
             CheckAndTakeBonusOrMagicDoor(_bo_man_coords);
-            //if (time(0) - enemy_move_time > 1) {
-            //    MoveEnemies();
-             //   enemy_move_time = time(0);
-            //}
+            if (time(0) - enemy_move_time > 1) {
+                MoveEnemies();
+                enemy_move_time = time(0);
+            }
 
             if (!_bombs.empty()) {
                 ExplosionsController();
@@ -518,7 +419,7 @@ namespace Bomberman
 
             //std::this_thread::sleep_for(std::chrono::milliseconds(500));
             std::system("cls");
-            std::cout << "lives: " << _cur_lives << '\n';
+            std::cout << "lives: " << _lives << '\n';
             //         std::cout << " max bomb num: " << _max_bomb_num;
            //          std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
            //          if (_planted_bombs.size() == 1) {

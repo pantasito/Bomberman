@@ -10,7 +10,6 @@ using namespace Bomberman;
 
 int main() {
         srand((int)(time(0)));
-        //Game game(17, 20);
         Game game(17, 50);
 
         std::thread _game_action_thread(&Game::Run, &game);
@@ -18,9 +17,6 @@ int main() {
         char command;
         do
         {   
-            //system("cls");
-            //game.Print(); 
-
             command = _getch();
 
             if (command == 27)

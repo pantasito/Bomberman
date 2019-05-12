@@ -27,11 +27,6 @@
 
 namespace Bomberman
 {
-    bool operator<(const Object::Enemy& lhs, const Object::Enemy& rhs) {
-        if (lhs._current_coords._row_num == rhs._current_coords._row_num) return lhs._current_coords._col_num < rhs._current_coords._col_num;
-        return lhs._current_coords._row_num < rhs._current_coords._row_num;
-    }
- 
     static const int kTimeFromPlantingBombToBlowUp = 3;
 
     static const int kProbabilityBonusOfOneType = 0.1;
@@ -42,15 +37,22 @@ namespace Bomberman
 
     static const Object::Point kStartPoint(0, 0);
 
-    static const std::vector<Object::Point> kMoveDeltas = { Object::Point(0,-1), Object::Point(-1,0), Object::Point(0, 1), Object::Point(1, 0) };
+    static const std::vector<Object::Point> kMoveDeltas = { Object::Point(-1, 0), Object::Point(0, 1), Object::Point(1, 0), Object::Point(0,-1) };
 
     enum class Direction : int {
-        Left = 0,
-        Up = 1,
-        Right = 2,
-        Down = 3
+        Up = 0,
+        Right = 1,
+        Down = 2,
+        Left = 3
     };
 
+    static const Direction kPosibleDirection[4][3] =
+    {
+        {Direction::Up, Direction::Right, Direction::Down},
+        {Direction::Left, Direction::Right, Direction::Down},
+        {Direction::Up, Direction::Left, Direction::Down},
+        {Direction::Up, Direction::Right, Direction::Left},
+    };
 
     class Game {
         Field _field;
@@ -59,7 +61,7 @@ namespace Bomberman
         bool is_game_over = false;
         bool are_you_won = false;
 
-        int _cur_lives;
+        int _lives;
 
         bool _is_your_ability_walk_through_walls_activated = false;
         bool _is_your_blast_immunity_activated = false;
@@ -69,7 +71,7 @@ namespace Bomberman
         int _max_bomb_num = 2;
 
         std::vector<Object::Bomb> _bombs;
-        std::map<Object::Enemy, bool> _enemies;
+        std::vector<Object::Enemy> _enemies;
 
         Object::Point _bo_man_coords = kStartPoint;
 
@@ -89,10 +91,12 @@ namespace Bomberman
 
         //void GenerateDirectionOfEnemyMovement();
 
-        bool IsIsolated(Object::Point enemy) const;
+        //bool IsIsolated(Object::Point enemy) const;
 
-        Object::Point RefreshNewPosAndDirection(Object::Point point, int num_in_enemy_coords_vector);
-
+        //Object::Point RefreshNewPosAndDirection(Object::Point point, int num_in_enemy_coords_vector);
+        
+        Point GetNewDirection(const Object::Enemy& enemy) const;
+        
         void MoveEnemies();
 
         void ReduceOneLifeAndMoveToStart();
