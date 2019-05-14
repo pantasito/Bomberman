@@ -18,6 +18,7 @@
 #include <utility>
 #include <algorithm> 
 
+#include <functional>
 #include <memory> 
 
 #include "Field.h" 
@@ -76,7 +77,7 @@ namespace Bomberman
         Field _field;
 
         GameStatus   _game_status;
-        BoManBonuses _bonuses;
+        BoManBonuses _bonuses; // ANTODO _bo_man_bonuses
         
         int _lives;
 
@@ -85,9 +86,8 @@ namespace Bomberman
 
         Object::Point _bo_man_coords = kStartPoint;
 
-        bool AreAllCellsAvailable(int number_of_indestructible_walls);
-
-        void GenerateIndestructibleWalls(int number_of_indestructible_walls);
+        std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types; // ANTODO class (2 static vectors (cool and common bonuses)
+        int a = 0;
 
         std::vector<Object::Point> GenerateWalls(int walls_count);
 

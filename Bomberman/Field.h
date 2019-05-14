@@ -73,7 +73,7 @@ namespace Bomberman
 
             for (auto& elem : FieldObjectAndObjectSymbol)
             {
-                if (IsIn(elem.first, point))
+                if (FullyContained(elem.first, point))
                 {
                     SetSymbol(point, elem.second);
                     return;
@@ -142,8 +142,12 @@ namespace Bomberman
             return _field[point._row_num][point._col_num] & static_cast<int>(object);
         }
 
-        bool IsIn(int objects_mask, Point point) const {
+        bool FullyContained(int objects_mask, Point point) const {
             return (_field[point._row_num][point._col_num] & objects_mask) == objects_mask;
+        }
+
+        bool AtLeastOneContained(int objects_mask, Point point) const {
+            return _field[point._row_num][point._col_num] & objects_mask;
         }
 
         bool IsEmpty(Point point) const {

@@ -224,6 +224,8 @@ namespace Bomberman
         GenerateEnemies(_field.RowsCount());
         
         _lives = kNumberOfLivesAtTheStart;
+         
+        // TODO InitializationBonusesTypes(); fill array _bonuses_types
     }
 
     void Game::SetBombsTimerToBlowNow() {
@@ -253,6 +255,16 @@ namespace Bomberman
             _game_status._are_you_won = true;
             return;
         }
+      
+        /*
+        for (const auto& [object_type, bonus_effect] : _bonuses_types) {
+            if (_field.IsIn(object_type, point)) {
+                bonus_effect();
+                _field.Remove(object_type, point);
+                return;
+            }
+        }
+        */
 
         if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, point)) {
             ++_bonuses._bomb_blast_radius;
@@ -370,7 +382,12 @@ namespace Bomberman
 
                     break;
                 }
-            
+                /*
+                if (_field.AtLeastOneContained(5, exploded_cell)) {
+
+                }
+                */
+
                 if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) ||
                     _field.IsIn(FieldObject::IncreasingNumberOfBombs, exploded_cell) ||
                     _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) ||

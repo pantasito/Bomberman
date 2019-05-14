@@ -8,8 +8,15 @@ using namespace Bomberman;
 #include <map>
 
 // ANTODO создать класс, со стрингой. В конструкторе копирования и перемещения написать принт
+#include <functional>
+
+
 
 int main() {
+        
+
+
+
         srand((int)(time(0)));
         Game game(17, 50);
 
