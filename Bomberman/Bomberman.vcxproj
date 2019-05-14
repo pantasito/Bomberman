@@ -134,6 +134,9 @@
     <ClInclude Include="Field.h" />
     <ClInclude Include="Object\Point.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Info.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -205,6 +205,17 @@ namespace Bomberman
         _bombs.erase(it_to_ready_bombs, _bombs.end());
     }
 
+    void Game::InitializationBonusesTypes() {
+        _bonuses_types = {
+            {FieldObject::IncreaseBombBlastRadius,     [this]() {++_bonuses._bomb_blast_radius; }},
+            {FieldObject::IncreasingNumberOfBombs,     [this]() {++_bonuses._max_bomb_num; }},
+            {FieldObject::AbilityToPassThroughWalls,   [this]() {_bonuses._is_your_ability_walk_through_walls_activated = true; }},
+            {FieldObject::AbilityToPassThroughWalls,   [this]() {_bonuses._is_your_ability_walk_through_walls_activated = true; }},
+            {FieldObject::ImmunityToExplosion,         [this]() {_bonuses._is_your_blast_immunity_activated = true; }},
+            {FieldObject::DetonateBombAtTouchOfButton, [this]() {_bonuses._is_detonate_bomb_at_touch_of_button_activated = true; }}
+        };
+    }
+
     Game::Game(int rows_count, int cols_count)
         : _field(rows_count, cols_count) {
         const int number_of_indestructible_walls = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
@@ -226,6 +237,7 @@ namespace Bomberman
         _lives = kNumberOfLivesAtTheStart;
          
         // TODO InitializationBonusesTypes(); fill array _bonuses_types
+        InitializationBonusesTypes();
     }
 
     void Game::SetBombsTimerToBlowNow() {
@@ -256,16 +268,15 @@ namespace Bomberman
             return;
         }
       
-        /*
-        for (const auto& [object_type, bonus_effect] : _bonuses_types) {
-            if (_field.IsIn(object_type, point)) {
+        // AR 1
+        for (auto [bonus, bonus_effect] : _bonuses_types) {
+            if (_field.IsIn(bonus, point)) {
                 bonus_effect();
-                _field.Remove(object_type, point);
+                _field.Remove(bonus, point);
                 return;
             }
         }
-        */
-
+/*
         if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, point)) {
             ++_bonuses._bomb_blast_radius;
             _field.Remove(FieldObject::IncreaseBombBlastRadius, point);
@@ -293,8 +304,9 @@ namespace Bomberman
         if (_field.IsIn(FieldObject::DetonateBombAtTouchOfButton, point)) {
             _bonuses._is_detonate_bomb_at_touch_of_button_activated = true;
             _field.Remove(FieldObject::DetonateBombAtTouchOfButton, point);
-            return;
+            return;    
         }
+    */
     }
 
     void Game::MoveBoMan(Direction direction) {
@@ -387,7 +399,7 @@ namespace Bomberman
 
                 }
                 */
-
+                // AR 3
                 if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) ||
                     _field.IsIn(FieldObject::IncreasingNumberOfBombs, exploded_cell) ||
                     _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) ||

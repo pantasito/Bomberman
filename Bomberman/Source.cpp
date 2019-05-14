@@ -13,10 +13,6 @@ using namespace Bomberman;
 
 
 int main() {
-        
-
-
-
         srand((int)(time(0)));
         Game game(17, 50);
 

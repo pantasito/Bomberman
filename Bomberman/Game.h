@@ -66,6 +66,7 @@ namespace Bomberman
         int _max_bomb_num      = 1;
     };
 
+   
     // ANTODO Add structure Bomberman { BoManBonuses, lives, _bo_man_coords}
 
     struct GameStatus {
@@ -86,8 +87,13 @@ namespace Bomberman
 
         Object::Point _bo_man_coords = kStartPoint;
 
-        std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types; // ANTODO class (2 static vectors (cool and common bonuses)
-        int a = 0;
+        // AR 2
+        std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types;
+
+
+        bool AreAllCellsAvailable(int number_of_indestructible_walls);
+
+        void GenerateIndestructibleWalls(int number_of_indestructible_walls);
 
         std::vector<Object::Point> GenerateWalls(int walls_count);
 
@@ -106,6 +112,8 @@ namespace Bomberman
         void ReduceOneLifeAndMoveToStart();
 
         void BlowReadyBombs();
+
+        void InitializationBonusesTypes();
 
     public:
         Game(int rows_count, int cols_count);

@@ -29,7 +29,6 @@ namespace Bomberman
         DetonateBombAtTouchOfButton = 2048,				//q
     };
 
-
     using Object::Point;
 
     class Field {
@@ -50,13 +49,13 @@ namespace Bomberman
 
         static inline const std::vector<std::pair<int, char>> FieldObjectAndObjectSymbol = 
         {
-            {static_cast<int>(FieldObject::Enemy), (char)245 },              // 'ї'
-            {UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall), (char)176 },       // '░' 
+            {static_cast<int>(FieldObject::Enemy), (char)245 },                         // 'ї'
+            {UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall), (char)176 },  // '░' 
             {static_cast<int>(FieldObject::BoMan), 'o' },
-            {static_cast<int>(FieldObject::IndestructibleWall), (char)219 }, // '█'
-            {static_cast<int>(FieldObject::Bomb), (char)253 },               // '¤' 
-            {static_cast<int>(FieldObject::Wall), (char)177 },               // '▒'
-            {static_cast<int>(FieldObject::MagicDoor), (char)127 },          // '⌂'
+            {static_cast<int>(FieldObject::IndestructibleWall), (char)219 },            // '█'
+            {static_cast<int>(FieldObject::Bomb), (char)253 },                          // '¤' 
+            {static_cast<int>(FieldObject::Wall), (char)177 },                          // '▒'
+            {static_cast<int>(FieldObject::MagicDoor), (char)127 },                     // '⌂'
             {static_cast<int>(FieldObject::IncreaseBombBlastRadius), 'r' },
             {static_cast<int>(FieldObject::IncreasingNumberOfBombs), 'n' },
             {static_cast<int>(FieldObject::AbilityToPassThroughWalls), 'i' },

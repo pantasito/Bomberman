@@ -27,7 +27,10 @@ namespace Bomberman
                 return Point(point._row_num + _row_num, point._col_num + _col_num);
             }
 
-            //ANTODO add +=
+            void operator+=(Point point) {
+                _row_num += point._row_num;
+                _col_num += point._col_num;
+            }
         };
     }
 }

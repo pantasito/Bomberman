@@ -1,0 +1,11 @@
+        /*
+        for (const auto& [object_type, bonus_effect] : _bonuses_types) {
+            if (_field.IsIn(object_type, point)) {
+                bonus_effect();
+                _field.Remove(object_type, point);
+                return;
+            }
+        }
+        */
+
+        std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types; // ANTODO class (2 static vectors (cool and common bonuses)
