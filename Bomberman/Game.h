@@ -12,6 +12,8 @@
 
 #include <chrono> 
 
+#include <windows.h>
+
 #include <thread> 
 #include <mutex> 
 
@@ -79,7 +81,7 @@ namespace Bomberman
 
         GameStatus   _game_status;
         BoManBonuses _bonuses; // ANTODO _bo_man_bonuses
-        
+
         int _lives;
 
         std::vector<Object::Bomb>  _bombs;
@@ -87,9 +89,12 @@ namespace Bomberman
 
         Object::Point _bo_man_coords = kStartPoint;
 
-        // AR 2
         std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types;
+        int _bitmask_all_bonus_types;
 
+        //где инициализировать эту переменную?
+        static const int _bitmask_field_objects_enemy_unable_to_stay = static_cast <int>(FieldObject::Wall) 
+            | static_cast <int>(FieldObject::IndestructibleWall) | static_cast <int>(FieldObject::Enemy) | static_cast <int>(FieldObject::Bomb);
 
         bool AreAllCellsAvailable(int number_of_indestructible_walls);
 
@@ -105,7 +110,9 @@ namespace Bomberman
         
         Point GetNewDirection(const Object::Enemy& enemy) const;
         
-        bool IsEnemyKeepDirection(const Object::Enemy& enemy) const;
+        bool IsEnemyCanReachThis(Point point) const;
+        
+        bool IsEnemyChangeDirection(const Object::Enemy& enemy) const;
 
         void MoveEnemies();
 

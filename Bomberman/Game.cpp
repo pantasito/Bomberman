@@ -69,7 +69,7 @@ namespace Bomberman
         std::vector<Object::Point> walls;
 
         while (walls.size() < walls_count) {
-            const Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount()); //не делаю проверку IsOnField
+            const Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
             if (_field.IsEmpty(point)) {
                 _field.Set(FieldObject::Wall, point);
                 walls.push_back(point);
@@ -101,7 +101,6 @@ namespace Bomberman
 
         assert(walls.size() >= 2 * num_of_bonuses_of_one_type + 3);
 
-        // ANTODO переделать систему бонусов, чтоб не было много ифов (ПОТОМ)
         for (int i = 0; i < num_of_bonuses_of_one_type; ++i) {
             _field.Add(FieldObject::IncreasingNumberOfBombs, walls.back());
             walls.pop_back();
@@ -118,7 +117,6 @@ namespace Bomberman
             _field.Add(FieldObject::DetonateBombAtTouchOfButton, walls.back());
             walls.pop_back();
         }
-        //со скоростью движения бомбермена не справился
     }
 
     void Game::GenerateEnemies(int enemies_num) {
@@ -132,14 +130,14 @@ namespace Bomberman
             }
         }
     }
-    
+
+    bool Game::IsEnemyCanReachThis(Point point) const {
+        return (_field.IsOnField(point) && !_field.AtLeastOneContained(_bitmask_field_objects_enemy_unable_to_stay, point));
+    }
+
     Point Game::GetNewDirection(const Object::Enemy& enemy) const {
         const Point current_direction = enemy._direction_of_movement;
 
-        //	const auto prev_dir = _direction_of_movement_of_enemy[num_in_enemy_coords_vector];
-        // ANTODO сгенерить перестановку {1, 2, 3}, пробежать по ней фором 
-
-        // не придумал пока способ хорошо сгенерировать такую перестановку, сделал по-другому По идее по сложности не хуже 
         char possible_directions[4];
         int possible_directions_count = 0;
 
@@ -149,7 +147,7 @@ namespace Bomberman
             }
             
             const Point tested_position = enemy._current_coords + kMoveDeltas[i];
-            if (_field.IsOnField(tested_position) && _field.IsEmpty(tested_position)) { // ANTODO
+            if (IsEnemyCanReachThis(tested_position)) {
                 possible_directions[possible_directions_count] = i;
                 ++possible_directions_count;
             }
@@ -157,18 +155,21 @@ namespace Bomberman
         if (possible_directions_count == 0) {
             return current_direction;
         }
-        return kMoveDeltas[possible_directions[rand() % possible_directions_count]];
+ 
+        //довольно внезапно это possible_directions[rand() % possible_directions_count] это конвертится в int
+        //происходит конвертция чара в инт, неявное преобразование типов?
+        return kMoveDeltas[possible_directions[rand() % possible_directions_count]]; 
     }
     
-    bool Game::IsEnemyKeepDirection(const Object::Enemy& enemy) const {
-        return ((rand() % 100) > (enemy.number_of_moves_made_in_one_direction * kProbabilityOfChangeDirectionAfterOneMove));
+    bool Game::IsEnemyChangeDirection(const Object::Enemy& enemy) const {
+        return ((rand() % 100) < (enemy.number_of_moves_made_in_one_direction * kProbabilityOfChangeDirectionAfterOneMove));
     }
 
     void Game::MoveEnemies() {
         for (auto& enemy : _enemies) {
             const Point new_coordinates = enemy._current_coords + enemy._direction_of_movement;
             
-            if (!_field.IsOnField(new_coordinates) || !_field.IsEmpty(new_coordinates) || !IsEnemyKeepDirection(enemy)) { // ANTODO check possible enemy pos
+            if ((!IsEnemyCanReachThis(new_coordinates) || IsEnemyChangeDirection(enemy))) {
                 const Point new_direction = GetNewDirection(enemy);
                 if (enemy._direction_of_movement == new_direction) {
                     continue;
@@ -178,6 +179,9 @@ namespace Bomberman
             _field.Remove(FieldObject::Enemy, enemy._current_coords);
             enemy.MoveInCurrentDirection();
             _field.Add(FieldObject::Enemy, enemy._current_coords);
+            if (_bo_man_coords == enemy._current_coords) {
+                ReduceOneLifeAndMoveToStart();
+            }
         }
     }
 
@@ -214,6 +218,10 @@ namespace Bomberman
             {FieldObject::ImmunityToExplosion,         [this]() {_bonuses._is_your_blast_immunity_activated = true; }},
             {FieldObject::DetonateBombAtTouchOfButton, [this]() {_bonuses._is_detonate_bomb_at_touch_of_button_activated = true; }}
         };
+
+        for (const auto& [bonus_type, bonus_effect] : _bonuses_types) {
+            _bitmask_all_bonus_types |= static_cast <int>(bonus_type);
+        }
     }
 
     Game::Game(int rows_count, int cols_count)
@@ -245,8 +253,6 @@ namespace Bomberman
             return;
         }
 
-        //могу переставить всем бомбам время взрыва..они взорвуться из-за работы ExplosionTimeController() 
-        //кажется где-то взрыв записан, как BlowUp, а где-то, как Eхposion
         time_t cur_time = time(0);
         for (auto& bomb : _bombs) {
             bomb._time_of_explosion = cur_time;
@@ -254,7 +260,6 @@ namespace Bomberman
     }
 
     void Game::CheckAndTakeBonusOrMagicDoor(Object::Point point) {
-
         if (_field.IsIn(FieldObject::Wall, point)) {
             return;
         }
@@ -267,46 +272,16 @@ namespace Bomberman
             _game_status._are_you_won = true;
             return;
         }
-      
-        // AR 1
-        for (auto [bonus, bonus_effect] : _bonuses_types) {
-            if (_field.IsIn(bonus, point)) {
-                bonus_effect();
-                _field.Remove(bonus, point);
-                return;
+
+        if (_field.AtLeastOneContained(_bitmask_all_bonus_types, point)) {
+            for (const auto& [bonus, bonus_effect] : _bonuses_types) {
+                if (_field.IsIn(bonus, point)) {
+                    bonus_effect();
+                    _field.Remove(bonus, point);
+                    return;
+                }
             }
         }
-/*
-        if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, point)) {
-            ++_bonuses._bomb_blast_radius;
-            _field.Remove(FieldObject::IncreaseBombBlastRadius, point);
-            return;
-        }
-
-        if (_field.IsIn(FieldObject::IncreasingNumberOfBombs, point)) {
-            ++_bonuses._max_bomb_num;
-            _field.Remove(FieldObject::IncreasingNumberOfBombs, point);
-            return;
-        }
-
-        if (_field.IsIn(FieldObject::AbilityToPassThroughWalls, point)) {
-            _bonuses._is_your_ability_walk_through_walls_activated = true;
-            _field.Remove(FieldObject::AbilityToPassThroughWalls, point);
-            return;
-        }
-
-        if (_field.IsIn(FieldObject::ImmunityToExplosion, point)) {
-            _bonuses._is_your_blast_immunity_activated = true;
-            _field.Remove(FieldObject::ImmunityToExplosion, point);
-            return;
-        }
-
-        if (_field.IsIn(FieldObject::DetonateBombAtTouchOfButton, point)) {
-            _bonuses._is_detonate_bomb_at_touch_of_button_activated = true;
-            _field.Remove(FieldObject::DetonateBombAtTouchOfButton, point);
-            return;    
-        }
-    */
     }
 
     void Game::MoveBoMan(Direction direction) {
@@ -332,7 +307,6 @@ namespace Bomberman
         // вот вторая	Допустим враг один. В этой строчке может сщлучиться так, что 
         // врагов на поле вообще не будет и это как бы не очень правильно
 
-
         if (_field.IsIn(FieldObject::Enemy, new_pos)) {
             ReduceOneLifeAndMoveToStart();
             return;
@@ -344,7 +318,6 @@ namespace Bomberman
         _field.Remove(FieldObject::BoMan, _bo_man_coords);
         _bo_man_coords = new_pos;
         //unlock(); ?..
-
     }
 
     void Game::DropBomb() {
@@ -391,22 +364,13 @@ namespace Bomberman
                     
                     std::swap(*exploded_enemy_it, _enemies.back());
                     _enemies.pop_back();
-
                     break;
                 }
-                /*
-                if (_field.AtLeastOneContained(5, exploded_cell)) {
-
-                }
-                */
-                // AR 3
-                if (_field.IsIn(FieldObject::IncreaseBombBlastRadius, exploded_cell) ||
-                    _field.IsIn(FieldObject::IncreasingNumberOfBombs, exploded_cell) ||
-                    _field.IsIn(FieldObject::AbilityToPassThroughWalls, exploded_cell) ||
-                    _field.IsIn(FieldObject::ImmunityToExplosion, exploded_cell) ||
-                    _field.IsIn(FieldObject::DetonateBombAtTouchOfButton, exploded_cell)) {
+                
+                if (_field.AtLeastOneContained(_bitmask_all_bonus_types, exploded_cell)) {
                     _field.Set(FieldObject::Enemy, exploded_cell);
                     _enemies.emplace_back(exploded_cell, kMoveDeltas[rand() % 4]);
+                    break;
                 }
 
                 if (_field.IsIn(FieldObject::MagicDoor, exploded_cell)) {
@@ -425,8 +389,6 @@ namespace Bomberman
             }
         }
 
-
-
         if (is_bo_man_exploded) {
             ReduceOneLifeAndMoveToStart();
         }
@@ -441,6 +403,7 @@ namespace Bomberman
         auto enemy_move_time = time(0);
 
         while (!_game_status._is_game_over) {
+            
             CheckAndTakeBonusOrMagicDoor(_bo_man_coords);
             if (time(0) - enemy_move_time > 1) {
                 MoveEnemies();
@@ -453,6 +416,7 @@ namespace Bomberman
 
             //std::this_thread::sleep_for(std::chrono::milliseconds(500));
             std::system("cls");
+            
             std::cout << "lives: " << _lives << '\n';
             //         std::cout << " max bomb num: " << _max_bomb_num;
            //          std::cout << " bomb blast radius: " << _bomb_blast_radius << "  ";
@@ -460,7 +424,7 @@ namespace Bomberman
            //              std::cout << "timer: " << time(0) - _planted_bombs[0]._time << "/" << 3;
             //         }
                      //std::cout << std::endl;
-
+            
             _field.Print();
             std::cout.flush();
         }

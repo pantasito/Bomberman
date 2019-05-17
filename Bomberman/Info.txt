@@ -9,3 +9,7 @@
         */
 
         std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types; // ANTODO class (2 static vectors (cool and common bonuses)
+
+		добавить еще однин тип врага, который будет двигаться быстрее, символ 244
+
+		поправить графику

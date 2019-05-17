@@ -15,6 +15,9 @@ namespace Bomberman
             
             int number_of_moves_made_in_one_direction = 0;
             
+            static const int _bitmask_field_objects_enemy_unable_to_stay = static_cast <int>(FieldObject::Wall)
+                | static_cast <int>(FieldObject::IndestructibleWall) | static_cast <int>(FieldObject::Enemy) | static_cast <int>(FieldObject::Bomb);
+
             Enemy(Point current_coords, Point direction_of_movement) :
                 _current_coords(current_coords), _direction_of_movement(direction_of_movement) 
             {}
