@@ -8,9 +8,9 @@ namespace Bomberman
     namespace Object
     {
         struct Enemy {
-            Point _current_coords;
+            Point _current_coords; // AN replce to coords
           
-            Point _coords_delta;
+            Point _coords_delta; 
             
             int number_of_moves_made_in_one_direction = 0;
             
@@ -18,13 +18,13 @@ namespace Bomberman
                 _current_coords(current_coords), _coords_delta(coords_delta)
             {}
             
-            void UpdateDirection(const Point dir) {
-                _coords_delta = dir;
+            void UpdateMovementDelta(const Point delta) {
+                _coords_delta = delta;
                 number_of_moves_made_in_one_direction = 0;
             }
 
             void MoveInCurrentDirection() {
-                _current_coords = _current_coords + _coords_delta;
+                _current_coords +=_coords_delta;
                 ++number_of_moves_made_in_one_direction;
             }
 

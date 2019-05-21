@@ -2,12 +2,10 @@
 #pragma once 
 
 #include <string> 
-
 #include <vector> 
-
 #include <iostream> 
 
-#include <assert.h> 
+#include <cassert> 
 
 #include "Object/Point.h"
 
@@ -16,7 +14,7 @@ namespace Bomberman
     enum class FieldObject : int {
         Empty = 0,
         BoMan = 1,
-        Wall = 2,
+        Wall = 2, // AN
         IndestructibleWall = 4,
         Enemy = 8,
         MagicDoor = 16,
@@ -49,18 +47,18 @@ namespace Bomberman
 
         static inline const std::vector<std::pair<int, char>> FieldObjectAndObjectSymbol = 
         {
-            {static_cast<int>(FieldObject::Enemy), (char)245 },                         // 'ї'
-            {UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall), (char)176 },  // '░' 
-            {static_cast<int>(FieldObject::BoMan), 'o' },
-            {static_cast<int>(FieldObject::IndestructibleWall), (char)219 },            // '█'
-            {static_cast<int>(FieldObject::Bomb), (char)253 },                          // '¤' 
-            {static_cast<int>(FieldObject::Wall), (char)177 },                          // '▒'
-            {static_cast<int>(FieldObject::MagicDoor), (char)127 },                     // '⌂'
-            {static_cast<int>(FieldObject::IncreaseBombBlastRadius), 'r' },
-            {static_cast<int>(FieldObject::IncreasingNumberOfBombs), 'n' },
-            {static_cast<int>(FieldObject::AbilityToPassThroughWalls), 'i' },
-            {static_cast<int>(FieldObject::ImmunityToExplosion), 'g' },
-            {static_cast<int>(FieldObject::DetonateBombAtTouchOfButton), 'q' }
+            { static_cast<int>(FieldObject::Enemy), (char)245 },                         // 'ї'
+            { UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall), (char)176 },  // '░' AN align
+            { static_cast<int>(FieldObject::BoMan), 'o' },
+            { static_cast<int>(FieldObject::IndestructibleWall), (char)219 },            // '█'
+            { static_cast<int>(FieldObject::Bomb), (char)253 },                          // '¤' 
+            { static_cast<int>(FieldObject::Wall), (char)177 },                          // '▒'
+            { static_cast<int>(FieldObject::MagicDoor)                   , (char)127 },   // '⌂'
+            { static_cast<int>(FieldObject::IncreaseBombBlastRadius)     , 'r' },
+            { static_cast<int>(FieldObject::IncreasingNumberOfBombs)     , 'n' },
+            { static_cast<int>(FieldObject::AbilityToPassThroughWalls)   , 'i' },
+            { static_cast<int>(FieldObject::ImmunityToExplosion)         , 'g' },
+            { static_cast<int>(FieldObject::DetonateBombAtTouchOfButton) , 'q' }
         };
         
         void UpdateStringPoint(Point point) {
@@ -92,7 +90,7 @@ namespace Bomberman
 
             const std::string horizontal_part_of_field_frame(_cols_count, kHorizontal);
 
-            const std::string top_of_field_frame = kLeftUp + horizontal_part_of_field_frame + kRightUp + '\n';
+            const std::string top_of_field_frame        = kLeftUp   + horizontal_part_of_field_frame + kRightUp   + '\n';
             const std::string lower_part_of_field_frame = kLeftDown + horizontal_part_of_field_frame + kRightDown + '\n';
 
             std::string str_field_with_side_parts_of_frame(_rows_count * (_cols_count + 3), ' ');
@@ -127,34 +125,27 @@ namespace Bomberman
         void Clear() {
             for (int i = 0; i < _rows_count; ++i) {
                 for (int j = 0; j < _cols_count; ++j) {
-                    Set(FieldObject::Empty, Point(i, j));
+                    _field[i][j] = static_cast<int>(FieldObject::Empty);
                 }
             }
+            _str_field.clear();
+            InitializeStrField();
+        }
+
+      
+        bool IsIn(FieldObject object, Point point)              const { return  _field[point._row_num][point._col_num] & static_cast<int>(object); }
+        bool FullyContained(int objects_mask, Point point)      const { return (_field[point._row_num][point._col_num] & objects_mask) == objects_mask; }
+        bool AtLeastOneContained(int objects_mask, Point point) const { return  _field[point._row_num][point._col_num] & objects_mask; }
+        bool IsEmpty(Point point)                               const { return  _field[point._row_num][point._col_num] == static_cast<int>(FieldObject::Empty); }
+
+
+        void Add(FieldObject object, Point point) {
+            _field[point._row_num][point._col_num] |= static_cast<int>(object);
+            UpdateStringPoint(point);
         }
 
         void Remove(FieldObject object, Point point) {
             _field[point._row_num][point._col_num] &= ~static_cast<int>(object);
-            UpdateStringPoint(point);
-        }
-
-        bool IsIn(FieldObject object, Point point) const {
-            return _field[point._row_num][point._col_num] & static_cast<int>(object);
-        }
-
-        bool FullyContained(int objects_mask, Point point) const {
-            return (_field[point._row_num][point._col_num] & objects_mask) == objects_mask;
-        }
-
-        bool AtLeastOneContained(int objects_mask, Point point) const {
-            return _field[point._row_num][point._col_num] & objects_mask;
-        }
-
-        bool IsEmpty(Point point) const {
-            return _field[point._row_num][point._col_num] == static_cast<int>(FieldObject::Empty);
-        }
-
-        void Add(FieldObject object, Point point) {
-            _field[point._row_num][point._col_num] |= static_cast<int>(object);
             UpdateStringPoint(point);
         }
 
@@ -163,9 +154,11 @@ namespace Bomberman
             UpdateStringPoint(point);
         }
 
+
         bool IsOnField(Point point) const {
             return (point._col_num >= 0 && point._col_num < ColsCount() && point._row_num >= 0 && point._row_num < RowsCount());
         }
+
 
         void Print()
         {

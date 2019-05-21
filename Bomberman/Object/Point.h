@@ -1,5 +1,7 @@
 ﻿// ☕ Привет
 
+// 365 КБ (374 272 байт)
+// 368 КБ (376 832 байт)
 #pragma once
 
 namespace Bomberman
@@ -11,7 +13,7 @@ namespace Bomberman
             int _col_num;
 
             Point(int row_num, int col_num) : _row_num(row_num), _col_num(col_num) {}
-
+            
             bool operator==(const Point point) const {
                 return (_row_num == point._row_num && _col_num == point._col_num);
             }

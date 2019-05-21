@@ -4,7 +4,7 @@
 
 namespace Bomberman
 {
-    bool Game::AreAllCellsAvailable(int number_of_indestructible_walls) {
+    bool Game::AreAllCellsAvailable(int number_of_indestructible_walls) const {
         assert(_field.IsEmpty(kStartPoint));
 
         std::queue<Object::Point> cells_to_check;
@@ -97,30 +97,31 @@ namespace Bomberman
     }
 
     void Game::GenerateBonuses(std::vector<Object::Point>& walls) {
-        const int num_of_bonuses_of_one_type = (int)(walls.size() * kProbabilityBonusOfOneType);
+        const int num_of_regular_bonuses_of_one_type = (int)(walls.size() * kProbabilityBonusOfOneType);
 
-        assert(walls.size() >= 2 * num_of_bonuses_of_one_type + 3);
+        static const std::vector<FieldObject> kRegularBonuses = { FieldObject::IncreasingNumberOfBombs, FieldObject::IncreaseBombBlastRadius };
+        static const std::vector<FieldObject> kCoolBonuses    = { FieldObject::AbilityToPassThroughWalls, FieldObject::ImmunityToExplosion, FieldObject::DetonateBombAtTouchOfButton };
+        
+        assert(walls.size() >= kRegularBonuses.size() * num_of_regular_bonuses_of_one_type + kCoolBonuses.size());
 
-        for (int i = 0; i < num_of_bonuses_of_one_type; ++i) {
-            _field.Add(FieldObject::IncreasingNumberOfBombs, walls.back());
-            walls.pop_back();
-            _field.Add(FieldObject::IncreaseBombBlastRadius, walls.back());
-            walls.pop_back();
+        for (int i = 0; i < num_of_regular_bonuses_of_one_type; ++i) {
+            for (auto bonus_type : kRegularBonuses) {
+                _field.Add(bonus_type, walls.back());
+                walls.pop_back();
+            }
         }
 
         //по одному крутому бонусу
         if (walls.size() > 3) {
-            _field.Add(FieldObject::AbilityToPassThroughWalls, walls.back());
-            walls.pop_back();
-            _field.Add(FieldObject::ImmunityToExplosion, walls.back());
-            walls.pop_back();
-            _field.Add(FieldObject::DetonateBombAtTouchOfButton, walls.back());
-            walls.pop_back();
+            for (auto bonus_type : kCoolBonuses) {
+                _field.Add(bonus_type, walls.back());
+                walls.pop_back();
+            }
         }
     }
 
     void Game::GenerateEnemies(int enemies_num) {
-        int generated_enemies_counter = 0;
+        int generated_enemies_counter = 0; // AN generated_enemies_count
         while (generated_enemies_counter < enemies_num) {
             const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
             if (_field.IsEmpty(point)) {
@@ -174,11 +175,13 @@ namespace Bomberman
                 if (enemy._coords_delta == new_direction) {
                     continue;
                 }
-                enemy.UpdateDirection(new_direction);
+                enemy.UpdateMovementDelta(new_direction);
             }
+
             _field.Remove(FieldObject::Enemy, enemy._current_coords);
             enemy.MoveInCurrentDirection();
             _field.Add(FieldObject::Enemy, enemy._current_coords);
+
             if (_bomberman._bo_man_coords == enemy._current_coords) {
                 ReduceOneLifeAndMoveToStart();
             }
@@ -199,7 +202,10 @@ namespace Bomberman
     }
 
     void Game::BlowReadyBombs() {
-        const auto it_to_ready_bombs = std::partition(_bombs.begin(), _bombs.end(), [cur_time = time(0)](const Object::Bomb& bomb) {return bomb._time_of_explosion > cur_time; });
+        const auto it_to_ready_bombs = std::partition(_bombs.begin(), _bombs.end(), [cur_time = time(0)](const Object::Bomb& bomb) 
+        {
+            return bomb._time_of_explosion > cur_time; 
+        });
         
         for (auto it = it_to_ready_bombs; it != _bombs.end(); ++it) {
             BombBlowUp(*it);
@@ -211,12 +217,11 @@ namespace Bomberman
 
     void Game::InitializationBonusesTypes() {
         _bonuses_types = {
-            {FieldObject::IncreaseBombBlastRadius,     [this]() {++_bomberman._bonuses._bomb_blast_radius; }},
-            {FieldObject::IncreasingNumberOfBombs,     [this]() {++_bomberman._bonuses._max_bomb_num; }},
-            {FieldObject::AbilityToPassThroughWalls,   [this]() {_bomberman._bonuses._is_your_ability_walk_through_walls_activated = true; }},
-            {FieldObject::AbilityToPassThroughWalls,   [this]() {_bomberman._bonuses._is_your_ability_walk_through_walls_activated = true; }},
-            {FieldObject::ImmunityToExplosion,         [this]() {_bomberman._bonuses._is_your_blast_immunity_activated = true; }},
-            {FieldObject::DetonateBombAtTouchOfButton, [this]() {_bomberman._bonuses._is_detonate_bomb_at_touch_of_button_activated = true; }}
+            { FieldObject::IncreaseBombBlastRadius,     [this]() { ++_bomberman._bonuses._bomb_blast_radius; }},
+            { FieldObject::IncreasingNumberOfBombs,     [this]() { ++_bomberman._bonuses._max_bomb_num; }},
+            { FieldObject::AbilityToPassThroughWalls,   [this]() {   _bomberman._bonuses._is_walk_through_walls = true; }},
+            { FieldObject::ImmunityToExplosion,         [this]() {   _bomberman._bonuses._is_your_blast_immunity_activated = true; }},
+            { FieldObject::DetonateBombAtTouchOfButton, [this]() {   _bomberman._bonuses._is_detonate_bomb_at_touch_of_button_activated = true; }}
         };
 
         for (const auto& [bonus_type, bonus_effect] : _bonuses_types) {
@@ -225,9 +230,10 @@ namespace Bomberman
     }
 
     Game::Game(int rows_count, int cols_count)
-        : _field(rows_count, cols_count) {
+        : _field(rows_count, cols_count)
+    {
         const int number_of_indestructible_walls = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
-        const int number_of_walls = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
+        const int number_of_walls                = (int)(_field.RowsCount() * _field.ColsCount() * kProbabilityOfWallCreation);
 
         do
         {
@@ -240,9 +246,8 @@ namespace Bomberman
         auto walls = GenerateWalls(number_of_walls);
         GenerateMagicDoor(walls);
         GenerateBonuses(walls);
+
         GenerateEnemies(_field.RowsCount());
-        
-        _bomberman._lives = kNumberOfLivesAtTheStart;
          
         InitializationBonusesTypes();
     }
@@ -252,13 +257,13 @@ namespace Bomberman
             return;
         }
 
-        time_t cur_time = time(0);
+        const time_t cur_time = time(0);
         for (auto& bomb : _bombs) {
             bomb._time_of_explosion = cur_time;
         }
     }
 
-    void Game::CheckAndTakeBonusOrMagicDoor(Object::Point point) {
+    void Game::CheckAndTakeBonusOrMagicDoor(Object::Point point) { // AN bomber man point
         if (_field.IsIn(FieldObject::Wall, point)) {
             return;
         }
@@ -294,29 +299,18 @@ namespace Bomberman
             return;
         }
 
-        if (!_bomberman._bonuses._is_your_ability_walk_through_walls_activated && (_field.IsIn(FieldObject::Wall, new_pos) || _field.IsIn(FieldObject::Bomb, new_pos))) {
+        if (!_bomberman._bonuses._is_walk_through_walls && (_field.IsIn(FieldObject::Wall, new_pos) || _field.IsIn(FieldObject::Bomb, new_pos))) {
             return;
         }
-
-        // ..понтяно и пиши понял в чем лажа частично. Поятно, что нужно сделать так что б там обе функции срабатывали оследовательно
-        // все. Да, тут можно на разных уронях синхронизировать. МОжно на уровне целых функций
-        // Т.е. пока работает MoveBoMan, не могут работать функции из Run.
-        // Можно чуть более локально синхронизацию сделать, чтоб операция движения
-        // параллельно с этим второй поток выполняет этот иф. Первый поток убрал врага с поля, но на новое место его еще не поставил
-        // вот вторая	Допустим враг один. В этой строчке может сщлучиться так, что 
-        // врагов на поле вообще не будет и это как бы не очень правильно
 
         if (_field.IsIn(FieldObject::Enemy, new_pos)) {
             ReduceOneLifeAndMoveToStart();
             return;
         }
 
-        // Т.е. чтоб эти 3 строчки выполнялись атомарно
-        //что-то типа lock()
         _field.Add(FieldObject::BoMan, new_pos);
         _field.Remove(FieldObject::BoMan, _bomberman._bo_man_coords);
         _bomberman._bo_man_coords = new_pos;
-        //unlock(); ?..
     }
 
     void Game::DropBomb() {
@@ -354,7 +348,6 @@ namespace Bomberman
                     _field.Remove(FieldObject::Wall, exploded_cell);
                     break;
                 }
-
                 
                 if (_field.IsIn(FieldObject::Enemy, exploded_cell)) {
                     _field.Remove(FieldObject::Enemy, exploded_cell);
@@ -393,25 +386,31 @@ namespace Bomberman
             ReduceOneLifeAndMoveToStart();
         }
     }
-
-    void Game::Print() {
-        std::system("cls");
-        _field.Print();
+    
+    /*
+    class ConsoleCursorSetter
+    {
+       SetCursor
     }
+    */
 
     void Game::Run() {
         auto enemy_move_time = time(0);
 
         //Откроем handle на стандартный вывод консоли и сделаем курсор не видимым, чтобы он не мерцал.
+        
         HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_CURSOR_INFO info;
         info.dwSize = 100;
         info.bVisible = FALSE;
         SetConsoleCursorInfo(consoleHandle, &info);
 
+        // AN ConsoleCursorSetter console_cursor_setter;
+
         while (!_game_status._is_game_over) {
             
             CheckAndTakeBonusOrMagicDoor(_bomberman._bo_man_coords);
+            
             if (time(0) - enemy_move_time > 1) {
                 MoveEnemies();
                 enemy_move_time = time(0);
@@ -423,7 +422,9 @@ namespace Bomberman
 
             COORD p = { 0 };
             SetConsoleCursorPosition(consoleHandle, p);
-           
+
+            //console_cursor_setter.Set(0,0);
+            
             std::cout << "lives: " << _bomberman._lives;
             std::cout << "  max bomb num: " << _bomberman._bonuses._max_bomb_num;
             std::cout << "  bomb blast radius: " << _bomberman._bonuses._bomb_blast_radius << std::endl;
@@ -443,4 +444,4 @@ namespace Bomberman
     void Game::Stop() {
         _game_status._is_game_over = true;
     }
-}
+}   
