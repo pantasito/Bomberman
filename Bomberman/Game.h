@@ -68,26 +68,25 @@ namespace Bomberman
         int _max_bomb_num      = 1;
     };
 
-   
-    // ANTODO Add structure Bomberman { BoManBonuses, lives, _bo_man_coords}
-
     struct GameStatus {
         bool _is_game_over = false;
         bool _are_you_won  = false;
     };
 
+    struct Bomberman {
+        BoManBonuses _bonuses;
+        int _lives;
+        Object::Point _bo_man_coords = kStartPoint;
+    };
+
     class Game {
         Field _field;
 
-        GameStatus   _game_status;
-        BoManBonuses _bonuses; // ANTODO _bo_man_bonuses
-
-        int _lives;
+        Bomberman  _bomberman;
+        GameStatus _game_status;
 
         std::vector<Object::Bomb>  _bombs;
         std::vector<Object::Enemy> _enemies;
-
-        Object::Point _bo_man_coords = kStartPoint;
 
         std::vector<std::pair<FieldObject, std::function<void()>>> _bonuses_types;
         int _bitmask_all_bonus_types;

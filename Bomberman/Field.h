@@ -17,7 +17,7 @@ namespace Bomberman
         Empty = 0,
         BoMan = 1,
         Wall = 2,
-        IndestructibleWall = 4, // ANTODO backup
+        IndestructibleWall = 4,
         Enemy = 8,
         MagicDoor = 16,
         Bomb = 32,

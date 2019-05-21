@@ -10,25 +10,21 @@ namespace Bomberman
         struct Enemy {
             Point _current_coords;
           
-            Point _direction_of_movement; // ANTODO delta 
-            //UpdateDirectionAndMove
+            Point _coords_delta;
             
             int number_of_moves_made_in_one_direction = 0;
             
-            static const int _bitmask_field_objects_enemy_unable_to_stay = static_cast <int>(FieldObject::Wall)
-                | static_cast <int>(FieldObject::IndestructibleWall) | static_cast <int>(FieldObject::Enemy) | static_cast <int>(FieldObject::Bomb);
-
-            Enemy(Point current_coords, Point direction_of_movement) :
-                _current_coords(current_coords), _direction_of_movement(direction_of_movement) 
+            Enemy(Point current_coords, Point coords_delta) :
+                _current_coords(current_coords), _coords_delta(coords_delta)
             {}
             
             void UpdateDirection(const Point dir) {
-                _direction_of_movement = dir;
+                _coords_delta = dir;
                 number_of_moves_made_in_one_direction = 0;
             }
 
             void MoveInCurrentDirection() {
-                _current_coords = _current_coords + _direction_of_movement;
+                _current_coords = _current_coords + _coords_delta;
                 ++number_of_moves_made_in_one_direction;
             }
 
