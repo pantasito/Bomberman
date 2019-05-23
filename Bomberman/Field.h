@@ -1,4 +1,5 @@
 ﻿// ☕ Привет
+
 #pragma once 
 
 #include <string> 
@@ -12,20 +13,20 @@
 namespace Bomberman
 {
     enum class FieldObject : int {
-        Empty = 0,
-        BoMan = 1,
-        Wall = 2, // AN
-        IndestructibleWall = 4,
-        Enemy = 8,
-        MagicDoor = 16,
-        Bomb = 32,
-        IncreaseBombBlastRadius = 64,					//r
-        IncreasingNumberOfBombs = 128,              	//n
-        AbilityToPassThroughWalls = 256,				//a
-        ImmunityToExplosion = 512,						//g
-        RunningSpeed = 1024,							//s
-        DetonateBombAtTouchOfButton = 2048,				//q
-    };
+        Empty = 0,                           //
+        BoMan = 1,                           // 'o'
+        Wall = 2,                            // '▒'
+        IndestructibleWall = 4,              // '█'
+        Enemy = 8,                           // 'ї'
+        MagicDoor = 16,                      // '⌂'
+        Bomb = 32,                           // '¤' 
+        IncreaseBombBlastRadius = 64,		 // 'r'
+        IncreasingNumberOfBombs = 128,       // 'n'
+        AbilityToPassThroughWalls = 256,	 // 'a'
+        ImmunityToExplosion = 512,			 // 'g'
+        RunningSpeed = 1024,				 // 's'
+        DetonateBombAtTouchOfButton = 2048,  // 'q'
+    };                                          
 
     using Object::Point;
 
@@ -42,23 +43,23 @@ namespace Bomberman
 
         static constexpr int UnionTwoFieldObjects(FieldObject obj1, FieldObject obj2)
         {
-            return static_cast<int>(obj1) | static_cast<int>(obj2);
+            return static_cast<int>(obj1) | static_cast<int>(obj2);  // '░'
         }
 
         static inline const std::vector<std::pair<int, char>> FieldObjectAndObjectSymbol = 
         {
-            { static_cast<int>(FieldObject::Enemy), (char)245 },                         // 'ї'
-            { UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall), (char)176 },  // '░' AN align
-            { static_cast<int>(FieldObject::BoMan), 'o' },
-            { static_cast<int>(FieldObject::IndestructibleWall), (char)219 },            // '█'
-            { static_cast<int>(FieldObject::Bomb), (char)253 },                          // '¤' 
-            { static_cast<int>(FieldObject::Wall), (char)177 },                          // '▒'
-            { static_cast<int>(FieldObject::MagicDoor)                   , (char)127 },   // '⌂'
-            { static_cast<int>(FieldObject::IncreaseBombBlastRadius)     , 'r' },
-            { static_cast<int>(FieldObject::IncreasingNumberOfBombs)     , 'n' },
-            { static_cast<int>(FieldObject::AbilityToPassThroughWalls)   , 'i' },
-            { static_cast<int>(FieldObject::ImmunityToExplosion)         , 'g' },
-            { static_cast<int>(FieldObject::DetonateBombAtTouchOfButton) , 'q' }
+            { static_cast<int>(FieldObject::Enemy)                        , (char)245 },
+            { UnionTwoFieldObjects(FieldObject::BoMan, FieldObject::Wall) , (char)176 },
+            { static_cast<int>(FieldObject::BoMan)                        , 'o'       },
+            { static_cast<int>(FieldObject::IndestructibleWall)           , (char)219 },
+            { static_cast<int>(FieldObject::Bomb)                         , (char)253 },
+            { static_cast<int>(FieldObject::Wall)                         , (char)177 },
+            { static_cast<int>(FieldObject::MagicDoor)                    , (char)127 },
+            { static_cast<int>(FieldObject::IncreaseBombBlastRadius)      , 'r'       },
+            { static_cast<int>(FieldObject::IncreasingNumberOfBombs)      , 'n'       },
+            { static_cast<int>(FieldObject::AbilityToPassThroughWalls)    , 'i'       },
+            { static_cast<int>(FieldObject::ImmunityToExplosion)          , 'g'       },
+            { static_cast<int>(FieldObject::DetonateBombAtTouchOfButton)  , 'q'       }
         };
         
         void UpdateStringPoint(Point point) {

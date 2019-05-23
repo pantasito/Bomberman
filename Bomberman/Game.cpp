@@ -4,7 +4,7 @@
 
 namespace Bomberman
 {
-    bool Game::AreAllCellsAvailable(int number_of_indestructible_walls) const {
+    bool Game::AreAllCellsAvailable(int indestructible_walls_count) const {
         assert(_field.IsEmpty(kStartPoint));
 
         std::queue<Object::Point> cells_to_check;
@@ -40,18 +40,18 @@ namespace Bomberman
             }
         }
 
-        if (num_of_tested_cells + number_of_indestructible_walls != _field.ColsCount() * _field.RowsCount()) {
+        if (num_of_tested_cells + indestructible_walls_count != _field.ColsCount() * _field.RowsCount()) {
             return false;
         }
 
         return true;
     }
 
-    void Game::GenerateIndestructibleWalls(int number_of_indestructible_walls)
+    void Game::GenerateIndestructibleWalls(int indestructible_walls_count)
     {
         int indestructible_walls_generated = 0;
 
-        while (indestructible_walls_generated < number_of_indestructible_walls) {
+        while (indestructible_walls_generated < indestructible_walls_count) {
             const Object::Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
 
             if (point == kStartPoint || _field.IsIn(FieldObject::IndestructibleWall, point)) {
@@ -62,7 +62,7 @@ namespace Bomberman
             ++indestructible_walls_generated;
         }
 
-        assert(indestructible_walls_generated == number_of_indestructible_walls);
+        assert(indestructible_walls_generated == indestructible_walls_count);
     }
 
     std::vector<Object::Point> Game::GenerateWalls(int walls_count) {
@@ -120,14 +120,14 @@ namespace Bomberman
         }
     }
 
-    void Game::GenerateEnemies(int enemies_num) {
-        int generated_enemies_counter = 0; // AN generated_enemies_count
-        while (generated_enemies_counter < enemies_num) {
+    void Game::GenerateEnemies(int enemies_count) {
+        int generated_enemies_count = 0;
+        while (generated_enemies_count < enemies_count) {
             const Point point(rand() % _field.RowsCount(), rand() % _field.ColsCount());
             if (_field.IsEmpty(point)) {
                 _field.Add(FieldObject::Enemy, point);
                 _enemies.emplace_back(point, kMoveDeltas[rand() % 4]);
-                ++generated_enemies_counter;
+                ++generated_enemies_count;
             }
         }
     }
@@ -147,7 +147,7 @@ namespace Bomberman
                 continue;
             }
             
-            const Point tested_position = enemy._current_coords + kMoveDeltas[i];
+            const Point tested_position = enemy._coords + kMoveDeltas[i];
             if (IsEnemyCanReachThis(tested_position)) {
                 possible_directions[possible_directions_count] = i;
                 ++possible_directions_count;
@@ -157,8 +157,6 @@ namespace Bomberman
             return current_direction;
         }
  
-        //довольно внезапно это possible_directions[rand() % possible_directions_count] это конвертится в int
-        //происходит конвертция чара в инт, неявное преобразование типов?
         return kMoveDeltas[possible_directions[rand() % possible_directions_count]]; 
     }
     
@@ -168,7 +166,7 @@ namespace Bomberman
 
     void Game::MoveEnemies() {
         for (auto& enemy : _enemies) {
-            const Point new_coordinates = enemy._current_coords + enemy._coords_delta;
+            const Point new_coordinates = enemy._coords + enemy._coords_delta;
             
             if ((!IsEnemyCanReachThis(new_coordinates) || IsEnemyChangeDirection(enemy))) {
                 const Point new_direction = GetNewDirection(enemy);
@@ -178,11 +176,11 @@ namespace Bomberman
                 enemy.UpdateMovementDelta(new_direction);
             }
 
-            _field.Remove(FieldObject::Enemy, enemy._current_coords);
+            _field.Remove(FieldObject::Enemy, enemy._coords);
             enemy.MoveInCurrentDirection();
-            _field.Add(FieldObject::Enemy, enemy._current_coords);
+            _field.Add(FieldObject::Enemy, enemy._coords);
 
-            if (_bomberman._bo_man_coords == enemy._current_coords) {
+            if (_bomberman._bo_man_coords == enemy._coords) {
                 ReduceOneLifeAndMoveToStart();
             }
         }
@@ -218,15 +216,11 @@ namespace Bomberman
     void Game::InitializationBonusesTypes() {
         _bonuses_types = {
             { FieldObject::IncreaseBombBlastRadius,     [this]() { ++_bomberman._bonuses._bomb_blast_radius; }},
-            { FieldObject::IncreasingNumberOfBombs,     [this]() { ++_bomberman._bonuses._max_bomb_num; }},
+            { FieldObject::IncreasingNumberOfBombs,     [this]() { ++_bomberman._bonuses._max_bomb_count; }},
             { FieldObject::AbilityToPassThroughWalls,   [this]() {   _bomberman._bonuses._is_walk_through_walls = true; }},
-            { FieldObject::ImmunityToExplosion,         [this]() {   _bomberman._bonuses._is_your_blast_immunity_activated = true; }},
-            { FieldObject::DetonateBombAtTouchOfButton, [this]() {   _bomberman._bonuses._is_detonate_bomb_at_touch_of_button_activated = true; }}
+            { FieldObject::ImmunityToExplosion,         [this]() {   _bomberman._bonuses._is_blast_immunity = true; }},
+            { FieldObject::DetonateBombAtTouchOfButton, [this]() {   _bomberman._bonuses._is_detonate_bomb_by_button = true; }}
         };
-
-        for (const auto& [bonus_type, bonus_effect] : _bonuses_types) {
-            _bitmask_all_bonus_types |= static_cast <int>(bonus_type);
-        }
     }
 
     Game::Game(int rows_count, int cols_count)
@@ -253,7 +247,7 @@ namespace Bomberman
     }
 
     void Game::SetBombsTimerToBlowNow() {
-        if (_bomberman._bonuses._is_detonate_bomb_at_touch_of_button_activated == false) {
+        if (_bomberman._bonuses._is_detonate_bomb_by_button == false) {
             return;
         }
 
@@ -263,12 +257,12 @@ namespace Bomberman
         }
     }
 
-    void Game::CheckAndTakeBonusOrMagicDoor(Object::Point point) { // AN bomber man point
-        if (_field.IsIn(FieldObject::Wall, point)) {
+    void Game::CheckAndTakeBonusOrMagicDoor() {
+        if (_field.IsIn(FieldObject::Wall, _bomberman._bo_man_coords)) {
             return;
         }
 
-        if (_field.IsIn(FieldObject::MagicDoor, point)) {
+        if (_field.IsIn(FieldObject::MagicDoor, _bomberman._bo_man_coords)) {
             if (!_enemies.empty()) {
                 return;
             }
@@ -277,11 +271,11 @@ namespace Bomberman
             return;
         }
 
-        if (_field.AtLeastOneContained(_bitmask_all_bonus_types, point)) {
+        if (_field.AtLeastOneContained(_bitmask_all_bonus_types, _bomberman._bo_man_coords)) {
             for (const auto& [bonus, bonus_effect] : _bonuses_types) {
-                if (_field.IsIn(bonus, point)) {
+                if (_field.IsIn(bonus, _bomberman._bo_man_coords)) {
                     bonus_effect();
-                    _field.Remove(bonus, point);
+                    _field.Remove(bonus, _bomberman._bo_man_coords);
                     return;
                 }
             }
@@ -314,7 +308,7 @@ namespace Bomberman
     }
 
     void Game::DropBomb() {
-        if (_bombs.size() >= _bomberman._bonuses._max_bomb_num || _field.IsIn(FieldObject::MagicDoor, _bomberman._bo_man_coords) 
+        if (_bombs.size() >= _bomberman._bonuses._max_bomb_count || _field.IsIn(FieldObject::MagicDoor, _bomberman._bo_man_coords)
             || _field.IsIn(FieldObject::Wall, _bomberman._bo_man_coords)) {
             return;
         }
@@ -327,7 +321,7 @@ namespace Bomberman
         bool is_bo_man_exploded = false;
 
         const auto SetIsBoManExploded = [this, &is_bo_man_exploded](Point exploded_point) {
-            if (_field.IsIn(FieldObject::BoMan, exploded_point) && _bomberman._bonuses._is_your_blast_immunity_activated == false) {
+            if (_field.IsIn(FieldObject::BoMan, exploded_point) && _bomberman._bonuses._is_blast_immunity == false) {
                 is_bo_man_exploded = true;
             }
         };
@@ -352,7 +346,7 @@ namespace Bomberman
                 if (_field.IsIn(FieldObject::Enemy, exploded_cell)) {
                     _field.Remove(FieldObject::Enemy, exploded_cell);
 
-                    auto exploded_enemy_it = find_if(_enemies.begin(), _enemies.end(), [exploded_cell](const Object::Enemy& enemy) { return enemy._current_coords == exploded_cell; });
+                    auto exploded_enemy_it = find_if(_enemies.begin(), _enemies.end(), [exploded_cell](const Object::Enemy& enemy) { return enemy._coords == exploded_cell; });
                     assert(exploded_enemy_it != _enemies.end());
                     
                     std::swap(*exploded_enemy_it, _enemies.back());
@@ -397,19 +391,9 @@ namespace Bomberman
     void Game::Run() {
         auto enemy_move_time = time(0);
 
-        //Откроем handle на стандартный вывод консоли и сделаем курсор не видимым, чтобы он не мерцал.
-        
-        HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_CURSOR_INFO info;
-        info.dwSize = 100;
-        info.bVisible = FALSE;
-        SetConsoleCursorInfo(consoleHandle, &info);
-
-        // AN ConsoleCursorSetter console_cursor_setter;
-
         while (!_game_status._is_game_over) {
             
-            CheckAndTakeBonusOrMagicDoor(_bomberman._bo_man_coords);
+            CheckAndTakeBonusOrMagicDoor();
             
             if (time(0) - enemy_move_time > 1) {
                 MoveEnemies();
@@ -420,13 +404,10 @@ namespace Bomberman
                 BlowReadyBombs();
             }
 
-            COORD p = { 0 };
-            SetConsoleCursorPosition(consoleHandle, p);
+            _console_cursor_setter.Set();
 
-            //console_cursor_setter.Set(0,0);
-            
             std::cout << "lives: " << _bomberman._lives;
-            std::cout << "  max bomb num: " << _bomberman._bonuses._max_bomb_num;
+            std::cout << "  max bomb num: " << _bomberman._bonuses._max_bomb_count;
             std::cout << "  bomb blast radius: " << _bomberman._bonuses._bomb_blast_radius << std::endl;
            
             _field.Print();

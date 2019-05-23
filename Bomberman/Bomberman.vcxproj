@@ -130,6 +130,8 @@
   <ItemGroup>
     <ClInclude Include="Game.h" />
     <ClInclude Include="Object\Bomb.h" />
+    <ClInclude Include="Object\Bomberman.h" />
+    <ClInclude Include="Object\ConsoleCursorSetter.h" />
     <ClInclude Include="Object\Enemy.h" />
     <ClInclude Include="Field.h" />
     <ClInclude Include="Object\Point.h" />

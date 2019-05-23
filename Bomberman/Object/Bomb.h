@@ -1,7 +1,8 @@
 ﻿// ☕ Привет
+
 #pragma once
 
-#include "Object/Point.h"
+#include "Point.h"
 
 namespace Bomberman
 {

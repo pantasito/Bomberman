@@ -1,7 +1,5 @@
 ﻿// ☕ Привет
 
-// 365 КБ (374 272 байт)
-// 368 КБ (376 832 байт)
 #pragma once
 
 namespace Bomberman
