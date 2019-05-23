@@ -6,9 +6,9 @@
 
 namespace Bomberman
 {
-    namespace Object {
+    namespace Helpers {
         
-        struct ConsoleCursorSetter {
+        class ConsoleCursorSetter {
             HANDLE consoleHandle;
             CONSOLE_CURSOR_INFO info;
             
@@ -19,7 +19,16 @@ namespace Bomberman
                 SetConsoleCursorInfo(consoleHandle, &info);
             }
 
-            void Set() {
+        public:
+            ConsoleCursorSetter(const ConsoleCursorSetter&) = delete;
+
+            static ConsoleCursorSetter& Get()
+            {
+                static ConsoleCursorSetter object;
+                return object;
+            }
+
+            void SetToStart() {
                 SetConsoleCursorPosition(consoleHandle, {0, 0});
             }
         };

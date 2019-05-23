@@ -7,7 +7,7 @@ using namespace Bomberman;
 
 int main() {
     srand((int)(time(0)));
-    Game game(19, 68);
+    Game game(7, 15);
 
     std::thread _game_action_thread(&Game::Run, &game);
 

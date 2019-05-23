@@ -12,8 +12,6 @@
 #include <queue>
 #include <map>
 
-#include <windows.h>
-
 #include <thread> 
 #include <mutex> 
 
@@ -28,7 +26,6 @@
 #include "Object/Enemy.h"
 #include "Object/Point.h"
 #include "Object/Bomberman.h"
-#include "Object/ConsoleCursorSetter.h"
 
 namespace Bomberman
 {
@@ -39,10 +36,6 @@ namespace Bomberman
     static const double kProbabilityBonusOfOneType = 0.05;
 
     static const double kProbabilityOfWallCreation = 0.16;
-
-    static const int kNumberOfLivesAtTheStart = 3;
-
-    static const Point kStartPoint(0, 0);
 
     static const int kProbabilityOfChangeDirectionAfterOneMove = 5;
 
@@ -73,10 +66,6 @@ namespace Bomberman
 
         GameStatus         _game_status;
         Object::Bomberman  _bomberman;
-        //_bomberman ; почему это не работет? Где лучше инициализиоровать поля _bombermana? сейчас в описании структуры
-        Object::ConsoleCursorSetter _console_cursor_setter;
-
-
 
         std::vector<Object::Bomb>  _bombs;
         std::vector<Object::Enemy> _enemies;

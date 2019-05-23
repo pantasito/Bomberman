@@ -1,6 +1,7 @@
 // ☕ Привет
 
 #include "Game.h"
+#include "Helpers/ConsoleCursorSetter.h"
 
 namespace Bomberman
 {
@@ -12,7 +13,7 @@ namespace Bomberman
         std::vector<std::vector<bool>> marked_cells(_field.RowsCount(), std::vector<bool>(_field.ColsCount(), false));
 
         cells_to_check.push(kStartPoint);
-        int num_of_tested_cells = 1;
+        int tested_cells_count = 1;
         marked_cells[kStartPoint._row_num][kStartPoint._col_num] = true;
 
         while (!cells_to_check.empty()) {
@@ -36,11 +37,11 @@ namespace Bomberman
 
                 marked_cells[cell._row_num][cell._col_num] = true;
                 cells_to_check.push(cell);
-                ++num_of_tested_cells;
+                ++tested_cells_count;
             }
         }
 
-        if (num_of_tested_cells + indestructible_walls_count != _field.ColsCount() * _field.RowsCount()) {
+        if (tested_cells_count + indestructible_walls_count != _field.ColsCount() * _field.RowsCount()) {
             return false;
         }
 
@@ -380,14 +381,7 @@ namespace Bomberman
             ReduceOneLifeAndMoveToStart();
         }
     }
-    
-    /*
-    class ConsoleCursorSetter
-    {
-       SetCursor
-    }
-    */
-
+   
     void Game::Run() {
         auto enemy_move_time = time(0);
 
@@ -404,10 +398,10 @@ namespace Bomberman
                 BlowReadyBombs();
             }
 
-            _console_cursor_setter.Set();
+            Helpers::ConsoleCursorSetter::Get().SetToStart();
 
             std::cout << "lives: " << _bomberman._lives;
-            std::cout << "  max bomb num: " << _bomberman._bonuses._max_bomb_count;
+            std::cout << "  max bomb count: " << _bomberman._bonuses._max_bomb_count;
             std::cout << "  bomb blast radius: " << _bomberman._bonuses._bomb_blast_radius << std::endl;
            
             _field.Print();
