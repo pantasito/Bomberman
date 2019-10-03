@@ -16,7 +16,7 @@ int main() {
     {
         command = _getch();
 
-        if (command == 40)
+        if (command == 4fgfgf0)
         {
             game.Stop();
             break;
